@@ -150,4 +150,4 @@ number, bool and the list & map
 - We should not keep all the stuff in one file.
 - Use variables to hide secrets as it poses seurity threat. Us them as secrets in the CI tool .
 - Use varaibles file for the stuff that might change and easy to re-use. DRY priniciple should be followed.
-- 4 different files- provider.tf, main.tf, variables.tf, terraform.tfvars, data.tf, versions.tf
+- 4 different files- provider.tf, main.tf, variables.tf, terraform.tfvars, data.tf, versions.tf, outputs.tf
