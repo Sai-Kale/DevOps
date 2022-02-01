@@ -134,17 +134,100 @@ path = "terraform/myproject"
   terraform {
   required_version = ">= 1.0"
   backend "s3" {
-          bucket = "mybucket"
+        bucket = "mybucket"
         key = "terraform/myproject"
         region = "eu-west-1"
   }
   }
   ```
-
+ - Then perform the terraform init to initialize the backend.
 
 # 2.3 Data Sources :
 
-# 2.4 Templates :
+- For certain providers (like AWS), terraform provides datasources
+- Datasources provide you with dynamic information
+- A lot of data is available by AWS in a structured format using their API
+- Terraform also exposes this information using data sources
+- Examples:
+  • List of AMIs
+  • List of availability Zones
+- Another great example is the datasource that gives you all IP addresses in
+use by AWS
+- This is great if you want to filter traffic based on an AWS region.
+        Ex:  allow all traffic from amazon instances in Europe
+- Filtering traffic in AWS can be done using security groups.
+```
+data "aws_ip_ranges" "european_ec2" {
+regions = [ "eu-west-1", "eu-central-1" ]
+services = [ "ec2" ]
+}
+resource "aws_security_group" "from_europe" {
+name = "from_europe"
+ingress {
+from_port = "443"
+to_port = "443"
+protocol = "tcp"
+cidr_blocks = [ "${data.aws_ip_ranges.european_ec2.cidr_blocks}" ]
+}
+tags {
+CreateDate = "${data.aws_ip_ranges.european_ec2.create_date}"
+SyncToken = "${data.aws_ip_ranges.european_ec2.sync_token}"
+}
+}
 
-# 2.5 Modules :
+```
 
+# 2.4 Modules :
+
+- Modules are used to make terraform more organized.
+- We can use third party modules wich are already pre exsisitng from github.
+- Reuse the parts of the code. 
+        Ex: to setup a VPC network in AWS.
+- If we a module from git we write as below.
+
+```
+module "module-example" {
+source = "github.com/wardviaene/terraform-module-example"
+}
+
+module "module-example" {
+source = "./module-example"
+}
+
+```
+- Pass arguments to the module.
+
+```
+module "module-example" {
+source = "./module-example"
+region = "us-west-1"
+    ip-range = "10.0.0.0/8"
+    cluster-size = "3"
+}
+
+```
+- If we open the modules folder we just again have the terraform files.
+- Use the output from the module in the main part of your code:
+
+```
+output "some-output" {
+value = "${module.module-example.aws-cluster}"
+}
+
+```
+
+
+# 2.5 Templates Provider :
+
+- The template provider can help creating customized configuration files
+- You can build templates based on variables from terraform resource
+attributes (e.g. a public IP address)
+- The result is a string that can be used as a variable in terraform
+        - The string contains a template
+        - e.g. a configuration file
+- Can be used to create generic templates or cloud init configs
+- In AWS, you can pass commands that need to be executed when the
+instance starts for the first time
+- In AWS this is called "user-data"
+- If you want to pass user-data that depends on other information in
+terraform (e.g. IP addresses), you can use the provider template
