@@ -229,4 +229,5 @@ attributes (e.g. a public IP address)
 instance starts for the first time
 - In AWS this is called "user-data"
 - If you want to pass user-data that depends on other information in
-terraform (e.g. IP addresses), you can use the provider template
+terraform (e.g. IP addresses), you can use the provider template.
+
