@@ -120,17 +120,16 @@ value = "${aws_instance.example.public_ip}"
         make changes to meet the correct remote state again
         - e.g. you terminate an instance that is managed by terraform, after terraform
         apply it will be started again
-  # 2.2.1 Terraform Remote State backend :
+ # 2.2.1 Terraform Remote State backend :
   - Declared inside the versions block.
   ```
   terraform {
-backend "consul" {
-address = "demo.consul.io" # hostname of consul cluster
-path = "terraform/myproject"
-}
-}
-```
-  ``` 
+        backend "consul" {
+        address = "demo.consul.io" # hostname of consul cluster
+        path = "terraform/myproject"
+        }
+        }
+ ```
   terraform {
   required_version = ">= 1.0"
   backend "s3" {
