@@ -42,5 +42,14 @@
 - Web service use:
     - XML or JSON format data over the internet (We have to use data in a certain format to send it over the internet.)
     - REST, SOAP ,  or XML/RPC to transfer the data. (The protocol which we use to send that data)
-
+- To understand better its we have ( UI -> App server -> DB)
+  UI is written Javascript, HTML and CSS to render a web page upon sending the request.
+  Whereas , Web Service API's respond with the data in raw format and they directly reach the server.
+- JSON and XML are the most common formats. All the modern programming languages parse the JSON and XML format making them friendly choice for developers.
+  Most modern APIs favor JSON over XML.
+- To build an API we have write some function on the web server where it recieves the http request, parse it and responds back with some data fetched from DB in JSON or XML format.
+- 3rd party tools makes this API call's and get the data and present to the user in a human readable format ex: flight booking.
+- [API](https://medium.com/@perrysetgo/what-exactly-is-an-api-69f36968a41f "What_an_API")
+- [API](https://medium.com/@perrysetgo/what-exactly-is-an-api-69f36968a41f "What_is_API")
+- AWS provides us with the tools like AWS API Gateway which is written in NodeJS so that we dont have to the write the programming logic and select the kind of requests to be served from exsisting options.
 
