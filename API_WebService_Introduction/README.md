@@ -49,7 +49,7 @@
   Most modern APIs favor JSON over XML.
 - To build an API we have write some function on the web server where it recieves the http request, parse it and responds back with some data fetched from DB in JSON or XML format.
 - 3rd party tools makes this API call's and get the data and present to the user in a human readable format ex: flight booking.
-- [API](https://medium.com/@perrysetgo/what-exactly-is-an-api-69f36968a41f "What_an_API")
-- [API](https://medium.com/@perrysetgo/what-exactly-is-an-api-69f36968a41f "What_is_API")
+- [What_is_an_API](https://medium.com/@perrysetgo/what-exactly-is-an-api-69f36968a41f "What_an_API")
+- [API_medium_article](https://medium.com/@perrysetgo/what-exactly-is-an-api-69f36968a41f "What_is_API")
 - AWS provides us with the tools like AWS API Gateway which is written in NodeJS so that we dont have to the write the programming logic and select the kind of requests to be served from exsisting options.
 
