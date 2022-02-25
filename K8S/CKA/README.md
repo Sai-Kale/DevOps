@@ -124,4 +124,3 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 - ** Node > POD > Container **
 ![alt text](imgs/pod.PNG "")
 - we can have mutiple containers running witin a single pod. Multi container pods.
-- 
