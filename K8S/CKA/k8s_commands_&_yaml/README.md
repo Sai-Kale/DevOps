@@ -8,6 +8,10 @@
   (gets the information about the list of current running pods)
 - kubectl describe pod {pod_name}
   (describes the infirmation relavant to that pod.)
+- kubectl apply -f pod.yml
+  (applies the pod.yml definition)
+- 
+
 
 # K8S YAML:
 

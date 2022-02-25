@@ -1,4 +1,4 @@
-apiVerison: v1   #string
+apiVerison: v1   #string (always use two spaces for information specified under certain tree)
 kind: Pod  #string
 metadata:  #dictionary
   name: myapp-prod
@@ -6,8 +6,10 @@ metadata:  #dictionary
     app: frontend
     version: 1.0
 spec:  #list/array
- containers:
+  containers:
   - name: nginix-frontend
     image: nginix
 
 #refer the README.md for above yaml explanation.
+
+# run command : kubectl appl -f pod.yml to run above yaml
