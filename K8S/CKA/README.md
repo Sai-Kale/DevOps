@@ -124,3 +124,38 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 - ** Node > POD > Container **
 ![alt text](imgs/pod.PNG "")
 - we can have mutiple containers running witin a single pod. Multi container pods.
+
+
+## 1.1 K8S Replication Controller:
+
+- There are many controllers in K8S. But the replication controller is the most important amongst all for the day to day usage.
+- Generally when we spin up a pod , we just spin one container or more containers within a pod. If for someone reason the pod dies we dont have a backup.
+- Here the replication controller help us run multiple instances of a single pod thus providing High Availability.
+- Hence, if a single pod dies replication controller ensures that the desired number of pods are always running.
+- Another reason for replication controller is we can give the minimum and max number of pods range that needs to be running at given point of time.
+- In case of increased traffic replication cotroller spins up more pods not exceeding the max number given and distributes the traffic across.
+- The Replication controller is replaced by replicaSet. 
+- We need to spin up all the stuff using the replicaset.
+- Refer to the yaml section on how to write the yaml's for the replica set.
+
+
+**Deployments > ReplicaSets > Pod**  (Refer to the k8s_commands and yaml folder)
+
+## Namespaces:
+
+- In Kubernetes, namespaces provides a mechanism for isolating groups of resources within a single cluster.Names of resources need to be unique within a namespace, but not across namespaces.       Namespace-based scoping is applicable only for namespaced objects (e.g. Deployments, Services, etc) and not for cluster-wide objects (e.g. StorageClass, Nodes, PersistentVolumes, etc).
+- Be defualt k8s has 2 different name space.
+   - default (where the user pod gets created by default)
+   - kube-system (admin level pods and services are created)
+   - kube-public (resources made avaiable to public are placed)
+- namespacing helps in isloating reosurces into QA, STG and PROD environments.
+- Each namespace can have own set of policies and resource quotas.
+- to connect to resources in a different namespace using a hostname. for example webserver in a default namespace to db in a DB namespace object. we have to use
+   mysql.connect("db-service.dev.svc.cluster.local)
+- we can mention the namespace in the yaml file instead of command line. Under the metadata section (namepsace: dev)
+   metadata:
+      name: my-app
+      namespace: dev
+- namespace can be created using the object type Namespace. using the below yaml definition. 
+- To limit the usage of resources in a namespace create the **resource quota**.
+

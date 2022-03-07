@@ -2,7 +2,7 @@ apiVerison: v1   #string (always use two spaces for information specified under 
 kind: Pod  #string
 metadata:  #dictionary
   name: myapp-prod
-  lables:
+  labels:
     app: frontend
     version: 1.0
 spec:  #list/array
