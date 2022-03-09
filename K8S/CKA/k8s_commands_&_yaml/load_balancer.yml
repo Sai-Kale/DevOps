@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metdata:
+  name: backend
+
+spec:
+  type: LoadBalancer #its the default type thats gets created when we dont specify the service type.
+  ports:
+    - targetport: 80 #port where the backend container is exposed
+      port: 80  #port where the service is exposed.
+  selector: #this should be fetched from the pod definition from the labels section.
+    name: my-app  t
+    type: backend

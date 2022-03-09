@@ -186,3 +186,19 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
    
    ![alt text](imgs/ports.PNG "")
    - How to write yml file for service refer to the yaml folder.
+   - services are matched to respective pods using the lables and selectors.
+   - In case of the pods are span across the mutiple nodes. we dont have to do anything the service itself spans across mutiple nodes thus distributing traffic to the multiple pods across different nodes in k8s cluster.
+   - generally this setup is not secure as we expose a port on the node to the outside world hence we got other type of services.
+- **ClusterIP** :
+   - consider we have a 3 tier application where we have web app, app  and redis runing across mutiple pods and request flow from webapp-> app -> redis
+    ![alt text](imgs/cluster.PNG "")
+   - How will the traffic from mutiple web pods is being sent to the app pods , how it will decide to which app pod the traffic should be sent to. Here k8s service clusterIP helps us with this.
+   - We create a service backend and assigns the app backend to that service so the traffic is being distributed to that relavant pods using lables and selectors.
+   - When we create a ClusterIP service its get a name and IP assigned to it. when we refer to that name the traffic will be sent to those relavant backend pods.
+
+- **LoadBalancer** :
+   - when we expose the application to the external users , the service that serves the request might span across mutiple nodes. Which IP address would we give to the end user amogst the different nodes IP address and the port number on which its exposed. to solve this issue we need a single URL to access the application. this is achieved using LoadBalancer.
+   - This LB can be created only on a supported Cloud Platform like GCP/AWS
+   - We can leverage that support of native load balancer and configure that for us. For example, if we set the service type to the LB it spins up CLB by default in AWS unless specific LB type is specified.
+
+![alt text](imgs/service.PNG "")

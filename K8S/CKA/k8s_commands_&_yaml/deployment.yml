@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  labels:
+    app: frontend
+    version: 1.0
+    env: dev  
+spec: #under spec section we can just bring in and paste entire pod definition except for apiversion and metadata. (template and replicas are same children of spec section)
+  template:  
+    name: myapp-prod #dictionary
+    labels:
+      app: frontend
+      version: 1.0
+    spec:  #list/array
+      containers:
+      - name: nginix-frontend
+        image: nginix
+  replicas: 3  #number of pods to be spun
+  selector: #helps us match all the pods having the below labels.
+    matchLabels:
+      app: frontend

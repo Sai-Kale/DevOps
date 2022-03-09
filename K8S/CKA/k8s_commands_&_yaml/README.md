@@ -37,6 +37,7 @@
 - kubectl config set-context $(kubectl config current-context) --namespace=dev
   (change the default namespace)
 - kubectl get pods --all-namespaces
+- kubectl get services
 
 # K8S YAML:
 
@@ -93,3 +94,11 @@
 **Deployments > ReplicaSets > Pod**
 
 
+## Services :
+
+- the service and mutiple pods under it are matched using the lables and selectors. check them in the yaml files.
+- the service by the nature itself distributed across multiple nodes.
+  - ClusterIP
+  - Nodeport 
+  - LoadBalancer
+  
