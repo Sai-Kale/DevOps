@@ -4,7 +4,7 @@
 
 ![alt text](imgs/k8s_arc.PNG "")
 
-### ETCD:
+#### ETCD:
 
 - Its a simple key-value store DB. 
 - Its stores data in key and value format. ex: Key: Name Value: Sai
@@ -66,7 +66,7 @@ So for the commands I showed in the previous video to work you must specify the 
 kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --prefix --keys-only --limit=10 --cacert /etc/kubernetes/pki/etcd/ca.crt --cert /etc/kubernetes/pki/etcd/server.crt  --key /etc/kubernetes/pki/etcd/server.key" 
 ```
 
-### Kube-API server:
+#### Kube-API server:
 
 - kube-api server is the primary management component in k8s.
 - when you run kubectl , it first reaches the kube-api server and authenticates the command. Then it communicates with the etcd DB and retrives the information.
@@ -75,7 +75,7 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 - there are lot of certificates to take care of when we configure k8s cluster manually check those out in the ssl and tls certificate section.
 - We create this api-server manually in the kube-system namespace and we can check all the components of api-server in the relavant manifest files.
 
-### Kube Controller Manager:
+#### Kube Controller Manager:
 
 - it manages various components within the k8s cluster and takes necessary actions.
 - In k8s terms a controller is a process that continously  monitors the status of the relavant components and takes remediate action to bring it to the desired state.
@@ -86,7 +86,7 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 ![alt text](imgs/controller.PNG "")
 ![alt text](imgs/cont_mgr.PNG "")
 
-### Kube-Scheduler:
+#### Kube-Scheduler:
 
 - Its repsonible for the scheduling the pods on the nodes.
 - Please take care that the kube-scheduler is only responsible for deciding which pod goes on which node. 
@@ -98,14 +98,14 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 
 - Please check the relavant process using ps -aux | grep kube-scheduler and modify the options as per the requirement.
 
-### Kubelet:
+#### Kubelet:
 
 - its like the captain of the ship.
 - It runs on the each worker node and responsible for the communcation b/w master and worker node. it also helps in sending the necessary details about the current pods and health check to the controller via kube-api server.
 - Similar to others the funtionalities of kubelet can be configured using the manual setup.
 - we have to install it expicitly on worker nodes. it does not get installed directly with the kubeadm.
 
-### Kube Proxy:
+#### Kube Proxy:
 
 - Within a k8s cluster every pod can reach every other pod using a POD network.
 - POD network is an internal virtual network which spans across the mutiple nodes and pods.
@@ -119,14 +119,14 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 - kubeadm deploys kube proxy as pods on each worker nodes in kube sytem name space.
 - Infact its deployed as a daemon set on each node. (daemon set we will no in upcoming lectures)
 
-### POD:
+#### POD:
 - its the smallest unit inside the k8s cluster.
 - ** Node > POD > Container **
 ![alt text](imgs/pod.PNG "")
 - we can have mutiple containers running witin a single pod. Multi container pods.
 
 
-## 1.1 K8S Replication Controller:
+### 1.1 K8S Replication Controller:
 
 - There are many controllers in K8S. But the replication controller is the most important amongst all for the day to day usage.
 - Generally when we spin up a pod , we just spin one container or more containers within a pod. If for someone reason the pod dies we dont have a backup.
@@ -141,7 +141,7 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 
 **Deployments > ReplicaSets > Pod**  (Refer to the k8s_commands and yaml folder)
 
-### Namespaces:
+#### Namespaces:
 
 - In Kubernetes, namespaces provides a mechanism for isolating groups of resources within a single cluster.Names of resources need to be unique within a namespace, but not across namespaces.       Namespace-based scoping is applicable only for namespaced objects (e.g. Deployments, Services, etc) and not for cluster-wide objects (e.g. StorageClass, Nodes, PersistentVolumes, etc).
 - Be defualt k8s has 2 different name space.
@@ -159,7 +159,7 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 - namespace can be created using the object type Namespace. using the below yaml definition. 
 - To limit the usage of resources in a namespace create the **resource quota**.
 
-## 1.3 Services:
+### 1.3 Services:
 
 - An abstract way to expose an application running on a set of Pods as a network service.
 - There are about 3 main service types in k8s.
@@ -206,7 +206,7 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 
 
 
-## 1.3 Imperative vs Declarative:
+### 1.4 Imperative vs Declarative:
 
 - Mentioning what needs to be  executed is done using declarative approach. Ex: ansible, terraform etc.,..
    most scenarios are covered as we use thrid party tools which know how to handle these situations.
@@ -218,6 +218,9 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 - Where as giving step by step instructions on what needs to be done and how is given by Imperative approach. More dependent on the logic we write and result in failures in few scenarios.
    ex: kubectl run -image=nginx ngnix, kubectl create deployment --image=nginx nginx
       kubectl update...., kubectl update.... , etc.,..
--      
+
+## 2.0 SCHEDULING:
+
+### 2.1
 
 
