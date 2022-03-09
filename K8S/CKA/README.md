@@ -208,3 +208,16 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 
 ## 1.3 Imperative vs Declarative:
 
+- Mentioning what needs to be  executed is done using declarative approach. Ex: ansible, terraform etc.,..
+   most scenarios are covered as we use thrid party tools which know how to handle these situations.
+  Ex: k8s we write these in the yaml format. 
+  kubectl apply -f pod.yml
+  if we want all the yml under a specific folder to be run we use.
+  kubectl apply -f /path/to/yaml/files.
+   make necessary changes and we can run the apply command again to update the changes.
+- Where as giving step by step instructions on what needs to be done and how is given by Imperative approach. More dependent on the logic we write and result in failures in few scenarios.
+   ex: kubectl run -image=nginx ngnix, kubectl create deployment --image=nginx nginx
+      kubectl update...., kubectl update.... , etc.,..
+-      
+
+
