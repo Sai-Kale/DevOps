@@ -221,6 +221,6 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 
 ## 2.0 SCHEDULING:
 
-### 2.1
+### 2.1 
 
 
