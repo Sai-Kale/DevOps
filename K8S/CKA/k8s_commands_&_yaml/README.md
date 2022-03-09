@@ -146,10 +146,11 @@ when the object is created similar configuration is stored in k8s memory called 
 
 Also on top of this when you apply the kubectl apply command , k8s also converts the file to json format and stored as last applied configuration.
 Going forward when change is made the three files are compared and updated.
+![alt text](../imgs/declarative.PNG "")
 
 ```
 
-![alt text](../imgs/service.PNG "")
+
 
 
 # K8S YAML:
