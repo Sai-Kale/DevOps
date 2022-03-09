@@ -141,7 +141,7 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 
 **Deployments > ReplicaSets > Pod**  (Refer to the k8s_commands and yaml folder)
 
-## Namespaces:
+### Namespaces:
 
 - In Kubernetes, namespaces provides a mechanism for isolating groups of resources within a single cluster.Names of resources need to be unique within a namespace, but not across namespaces.       Namespace-based scoping is applicable only for namespaced objects (e.g. Deployments, Services, etc) and not for cluster-wide objects (e.g. StorageClass, Nodes, PersistentVolumes, etc).
 - Be defualt k8s has 2 different name space.
@@ -159,3 +159,30 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 - namespace can be created using the object type Namespace. using the below yaml definition. 
 - To limit the usage of resources in a namespace create the **resource quota**.
 
+## 1.3 Services:
+
+- An abstract way to expose an application running on a set of Pods as a network service.
+- There are about 3 main service types in k8s.
+   1. NodePort
+   2. ClusterIP
+   3. Loadbalancer
+- **Nodeport** :
+   - Consider we have an webserver pod. how do we as an external user acccess that pod. As we know that pod has a IP adress, Node has an IP address.
+   for this purpose we use k8s service to forward the request to a pod.
+   - the use of this service is to listen to a port on the node and forward the request to the pod. This type of service is called NodePort service
+     As it listens to a particular port on the node and forwards the requests to the pod.
+   ![alt text](imgs/Node.PNG "")
+   ![alt text](imgs/nodeport.PNG "")
+   - Target port is the port on which the container listens, port is on which the service listens and sends the requests. Whereas Nodeport is the port on which the Node is listening to the outisde world requests. By default NodePort has a range of 30000-32787
+   targetport: One or more ports on which a container listens within a pod.
+
+   nodeport: Used primarily to accept consumer requests. (Eg: HTTP request from consumers to a webserver running in a container)
+
+   nodeport is listened on all nodes on all interfaces i.e 0.0.0.0:nodeport. Consumer service requests sent to nodeport is routed to container's targetport so that the container can fulfill the request.
+
+   port: Port used within the kubernetes pod network, primarily used to exchange requests between pods. Here as well, requests to a pod from another, is routed to the corrosponding pod's container targetport.
+
+   Summary: all requests end up in the targetport. nodeport is used if request from outside k8s network & port if from within.
+   
+   ![alt text](imgs/ports.PNG "")
+   - How to write yml file for service refer to the yaml folder.
