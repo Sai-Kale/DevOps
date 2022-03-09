@@ -202,3 +202,9 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
    - We can leverage that support of native load balancer and configure that for us. For example, if we set the service type to the LB it spins up CLB by default in AWS unless specific LB type is specified.
 
 ![alt text](imgs/service.PNG "")
+
+
+
+
+## 1.3 Imperative vs Declarative:
+
