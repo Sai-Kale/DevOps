@@ -220,7 +220,19 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
       kubectl update...., kubectl update.... , etc.,..
 
 ## 2.0 SCHEDULING:
+- Every pod has a component in spec section called nodeName which by default is not set. k8s sets it automatically.
+   Scheduler checks for all those pods for which these values are not set and schedules the same. It then identifies the right node for the pod by running the scheduling algorithm.
+   Once identified it binds the pod to that node by creating a binding object.
 
-### 2.1 
+### 2.1 Manual Scheudling:
+- If there is no scheduler to assign pods to nodes , the pods will remain in pending state.
+- we can manually schedule the pods to node by mentioning the nodeNamein the pod definition yaml file. This is called Manual Scheduling. Its rarely done.
+- We cant change the nodeName once the pod is created by editing the yaml file. Another apporach is to create a binding object and send a POST request binding API. Thus mimicking what the sheduler does.
+- POST request is done using the curl command by sending a YAML content in JSON format via the command line.
+
+![alt text](imgs/scheduling.PNG "")
+![alt text](imgs/binding.PNG "")
+
+
 
 
