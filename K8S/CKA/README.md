@@ -233,6 +233,69 @@ kubectl exec etcd-master -n kube-system -- sh -c "ETCDCTL_API=3 etcdctl get / --
 ![alt text](imgs/scheduling.PNG "")
 ![alt text](imgs/binding.PNG "")
 
+### 2.2 Labels and Selectors:
+-  Labels are key/value pairs that are attached to objects, such as pods. Labels are intended to be used to specify identifying attributes of objects that are meaningful and relevant to users, but do not directly imply semantics to the core system. Labels can be used to organize and to select subsets of objects. Labels can be attached to objects at creation time and subsequently added and modified at any time. Each object can have a set of key/value labels defined. Each Key must be unique for a given object.
+- metadata:
+  labels: 
+    key1 : "value1",
+    key2 : "value2"
+  annotations:
+   
+- Annotations: these are used for information purpose along with the labels in yaml file. 
+![alt text](imgs/labels.PNG "")
 
+### 2.3 Taints & Tolerations:
+- Node affinity is a property of Pods that attracts them to a set of nodes (either as a preference or a hard requirement). Taints are the opposite -- they allow a node to repel a set of pods.
+- Tolerations are applied to pods, and allow (but do not require) the pods to schedule onto nodes with matching taints.
 
+- Taints and tolerations work together to ensure that pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints
+- kubectl taint nodes node-name key=value:taint-effect
+  (taint the nodes in key value format; taint-effect has three options Noschedule| PreferNoSchedule | NoExecute)
+- Taints are added to the nodes
+- Tolerations are added to the pods. there are added in yaml file in under tolerations section in spec. the values must be spcified in quotes.
+![alt text](imgs/taint.PNG "")
+![alt text](imgs/taints.PNG "")
+![alt text](imgs/taintpod.PNG "")
 
+- **Taints and Tolerations doesn't tell the pod to go a particular node, instead taint tells the node to accept a particular pod only.**
+- when the k8s is setup, a taint is setup on the master node so as not to accept any pods on the master node.
+kubectl describe node kubemaster | grep Taint
+
+### 2.4 Node Selectors: (mostly we used node affinity instead of this)
+- Consider we  have a 3 node cluster with varying resources. We have different kinds of workloads in cluster.
+  we want the larger node configured to be with data processing pods as that would be the only node that wouldn't run of resources in case of increased workload.
+- To solve this we can set a limitation on the pod to run on a particular pod. we add a new property called **nodeSelector** in the pod yaml file.
+   spec:
+      nodeSelector:  
+         size: Large
+- But how can we label a node to be of size large. we can achieve that by using kubectl commands.
+   kubectl label nodes <node-name> <label-key>=<label-value>
+- However, it has limitations we used a single label and selector here. what if we have a requirement to place the pod on a large or medium node. OR to place the pod on node which is NOT small.
+   To serve this purpose Node Affinity and Anit Affinity are introduced.
+
+### 2.5 Node Affinity:
+
+- the main use case of node Affinity is to ensure large pods are scheduled to run on node with large resources.
+- we can provide advance capabilites to limit pod placement on relavant nodes  unlike node selectors.
+- node affinity is mentioned  under the spec as most other parameters.
+![alt text](imgs/affinity1.PNG "")
+- in the below yaml we can see node affinty is set to check only if the operator size exsists.
+![alt text](imgs/affinity2.PNG "")
+- We have mutiple node affinity types.
+![alt text](imgs/affinity3.PNG "")
+![alt text](imgs/affinity4.PNG "")
+![alt text](imgs/afinity5.PNG "")
+- All these node affinity types helps us in selecting nodes for pod objects as per our requirement.
+
+### Taints & Tolerations V/S Node Affinity:
+
+- consider we have 2 node and 3 pods blue, red and green. end goal should be same both node and pod should have the same color.
+![alt text](imgs/tnt.PNG "")
+- use taints and toleration as below image. taint the nodes and add tolerations to the pods.
+![alt text](imgs/tnt1.PNG "")
+- As taints & tolerations doesnt ensure that the pod for sure ends up on given nodes it might placed on different node as well which is un tainted.
+![alt text](imgs/tnt2.PNG "")
+- use node affinity to labels the nodes with respective colors. Then use the node selectors to tie the pods to the nodes.
+  however, that doesnt gurantee other pods doesnt end on these nodes.    
+![alt text](imgs/tnt3.PNG "")
+- hence , we use a combination of both are used to completely dedicate particular pods to desired nodes.

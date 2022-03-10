@@ -8,6 +8,6 @@ spec:
     - targetPort: 80
       port: 80   #mandatory field
       nodePort: 30008 #if not specified automatically allocated in the ragne 30000-32827
-  selector:
+  selector: #these are matched with the pod definition files having the below labels
     app: my-app
     type: front-end
