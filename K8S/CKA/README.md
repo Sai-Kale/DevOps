@@ -287,7 +287,7 @@ kubectl describe node kubemaster | grep Taint
 ![alt text](imgs/afinity5.PNG "")
 - All these node affinity types helps us in selecting nodes for pod objects as per our requirement.
 
-### Taints & Tolerations V/S Node Affinity:
+#### Taints & Tolerations V/S Node Affinity:
 
 - consider we have 2 node and 3 pods blue, red and green. end goal should be same both node and pod should have the same color.
 ![alt text](imgs/tnt.PNG "")
@@ -299,3 +299,187 @@ kubectl describe node kubemaster | grep Taint
   however, that doesnt gurantee other pods doesnt end on these nodes.    
 ![alt text](imgs/tnt3.PNG "")
 - hence , we use a combination of both are used to completely dedicate particular pods to desired nodes.
+
+### 2.6 Resource Limits:
+- if the resource limits threshold is breached on nodes, k8s does not schedule additional pods on these nodes and gives error resource requirements not matched.
+ Resources: CPU, MEM, DISK
+- resource requests minimum number of CPU and MEM required by the container. It uses this number to check where to schedule these pods. (default CPU=0.5, MEM=256 Mi, DISK)
+- if  you want to increase the resource requirements for a give pod we can mention it in the pod  definition yaml file.
+   spec:
+      containers:
+         resource:
+            requests:
+               memory: "1Gi"
+               cpu: 1 # 1 CPU means 1 vCPU Core in AWS
+- In docker , the container doesnt have any restriction on how much vCPU it can use. 
+- In k8s each container has a limit on how much vCPU it can consume. If not  stated explicitly container will be limited to only 1 vCPU usage. same with memory 512 Mi. we can set them manually as well.
+   spec:
+      containers:
+         resource:
+            requests:
+               memory: "1Gi"
+               cpu: 1 
+            limits:
+               memory: "2Gi"
+               cpu: 2
+- If container CPU goes beyond mentioned certain threshold , k8s will throttle the request. In the case of memory it doesnt throttle but repeated increase in usage k8s kills that pod.
+
+```
+In the previous lecture, I said - "When a pod is created the containers are assigned a default CPU request of .5 and memory of 256Mi". For the POD to pick up those defaults you must have first set those as default values for request and limit by creating a LimitRange in that namespace.
+
+
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: mem-limit-range
+spec:
+  limits:
+  - default:
+      memory: 512Mi
+    defaultRequest:
+      memory: 256Mi
+    type: Container
+https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/memory-default-namespace/
+
+
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cpu-limit-range
+spec:
+  limits:
+  - default:
+      cpu: 1
+    defaultRequest:
+      cpu: 0.5
+    type: Container
+```
+
+```
+A quick note on editing PODs and Deployments
+Edit a POD
+Remember, you CANNOT edit specifications of an existing POD other than the below.
+
+spec.containers[*].image
+
+spec.initContainers[*].image
+
+spec.activeDeadlineSeconds
+
+spec.tolerations
+
+For example you cannot edit the environment variables, service accounts, resource limits (all of which we will discuss later) of a running pod. But if you really want to, you have 2 options:
+
+1. Run the kubectl edit pod <pod name> command.  This will open the pod specification in an editor (vi editor). Then edit the required properties. When you try to save it, you will be denied. This is because you are attempting to edit a field on the pod that is not editable.
+
+
+
+A copy of the file with your changes is saved in a temporary location as shown above.
+
+You can then delete the existing pod by running the command:
+
+kubectl delete pod webapp
+
+
+
+Then create a new pod with your changes using the temporary file
+
+kubectl create -f /tmp/kubectl-edit-ccvrq.yaml
+
+
+
+2. The second option is to extract the pod definition in YAML format to a file using the command
+
+kubectl get pod webapp -o yaml > my-new-pod.yaml
+
+Then make the changes to the exported file using an editor (vi editor). Save the changes
+
+vi my-new-pod.yaml
+
+Then delete the existing pod
+
+kubectl delete pod webapp
+
+Then create a new pod with the edited file
+
+kubectl create -f my-new-pod.yaml
+
+
+
+Edit Deployments
+With Deployments you can easily edit any field/property of the POD template. Since the pod template is a child of the deployment specification,  with every change the deployment will automatically delete and create a new pod with the new changes. So if you are asked to edit a property of a POD part of a deployment you may do that simply by running the command
+
+kubectl edit deployment my-deployment
+
+```
+
+### 2.7 Daemon Sets:
+
+- A DaemonSet ensures that all (or some) Nodes run a copy of a Pod. As nodes are added to the cluster, Pods are added to them. As nodes are removed from the cluster, those Pods are garbage collected. Deleting a DaemonSet will clean up the Pods it created.
+
+Some typical uses of a DaemonSet are:
+
+running a cluster storage daemon on every node
+running a logs collection daemon on every node
+running a node monitoring daemon on every node
+In a simple case, one DaemonSet, covering all nodes, would be used for each type of daemon. A more complex setup might use multiple DaemonSets for a single type of daemon, but with different flags and/or different memory and cpu requests for different hardware types.
+![alt text](imgs/daemon.PNG "")
+- Its helps in running one copy of your pod  on each node in your cluster, whenever new noe is added to the cluster a replica of the pod is automatically added and vice versa.
+- The use case is monitoring agent/logs viewer, it is helpful as it can deploy monitoring agent as a deamon set running on each node.
+- kube proxy can also be deployed as a daemon set, similarly networking solution requires agent to be running on each node.
+- the daemon set yaml file is similar to pod replica set.
+![alt text](imgs/daemon2.PNG "")
+- How does daemon set schedule each pod on every node?
+   - one solution is using nodeName in yaml as discusssed in earlier section.so it gets placed on respective node.
+     Hoever, after version 1.1 its uses node affinity rules and default scheduler.
+![alt text](imgs/daemon3.PNG "")
+
+### 2.9 Static Pods:
+
+- Static Pods are managed directly by the kubelet daemon on a specific node, without the API server observing them. Unlike Pods that are managed by the control plane (for example, a Deployment); instead, the kubelet watches each static Pod (and restarts it if it fails).
+
+Static Pods are always bound to one Kubelet on a specific node.
+
+The kubelet automatically tries to create a mirror Pod on the Kubernetes API server for each static Pod. This means that the Pods running on a node are visible on the API server, but cannot be controlled from there. The Pod names will be suffixed with the node hostname with a leading hyphen.
+
+- Consider if there was no master node, is there anything kubelet can do as the capitain of the ship.
+- kubelet can manage a node independently. it has docker installed as well.
+- we can configure the kubelet to read the pod yaml files to read from a directory inside the node /etc/k8s/manifests/
+- Not only creates the pods if the application crashes it ensures to restart it. If we make any changes to the directory kubelet attempts to recreate it.
+- If u remove a file , pod is deleted automatically.
+- These pods that are created automatically without the intervention of master node directly on that particular node are called **static pods**
+- we can only create pods these way , we cant create deployments or replica sets etc.,..
+- It could be any directory on the host, it is passed inside the kubelet.service uder --pod-manifest-path OR we could provide a --config path.
+- we should know this irrespective of the pod. check for the path in kubelet.service and look for pod manifest path or config.
+- once the static pods are created run docker ps to check the cotainers running, we cant use the kubectl commands as we dont have the master yet.
+- kubelet can create pods both from  manifest path and from kube api server simultanesouly.
+-  We can get the static pods details running on the node via the kubectl commands when the master is active, however we can't edit or replace the pod as master doesnt have the acess.
+- we can only change the static pods via the files placed on the node, also these static pods names are appendend with the node name at the end. Ex:green-pod-node01 
+- Use Case:
+   - all the yaml files corresponding to the master node (ex: etcd, controlplane etc.,.) can be placed in the /etc/k8s/manifests . thats how the kubeadm make sure that these pods keep running all the time and setup the cluster. that is the reason when you type kubectl get pods -n kube-system , lists all the components as pods.
+
+#### Static Pods vs Daemon Sets:
+- Static pods:
+      - created by kubelet
+      - deploy control plane components as Static Pods.
+- Daemon Sets:
+      - Created by kube-API server
+      - Deploy monitoring agents, logging agents on nodes.
+- Both of them are ignored by kube-scheduler. It doesnt care about these pods.
+
+### 2.10 Multiple Schedulers:
+- Kubernetes ships with a default scheduler. If the default scheduler does not suit your needs you can implement your own scheduler. Moreover, you can even run multiple schedulers simultaneously alongside the default scheduler and instruct Kubernetes what scheduler to use for each of your pods.
+![alt text](imgs/multiple.PNG "")
+![alt text](imgs/multiple2.PNG "")
+- If you have multiple master then we have to mention the leader elect and lock object in the yaml file to select the custom scheduler. 
+- Mention the schedulerName while spinning up the pod to pick the right scheduler. If the schduler is not configured correctly the pod will be in pending state.
+![alt text](imgs/multiple3.PNG "")
+- kubectl get events, it lists all the recent events.
+- View the logs 
+![alt text](imgs/multiple4.PNG "")
+
+### 2.11 Configuring K8S Scheduler:
+- 
+
