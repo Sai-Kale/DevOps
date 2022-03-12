@@ -480,6 +480,15 @@ The kubelet automatically tries to create a mirror Pod on the Kubernetes API ser
 - View the logs 
 ![alt text](imgs/multiple4.PNG "")
 
-### 2.11 Configuring K8S Scheduler:
-- 
+## 3.0 Logging & Monitoring:
+
+- How to monitor CPU, usage, disk , networking etc.,. on Node and POD level.
+- on each node k8s runs kubelet daemon set, which recieves instructions from kube-api-server.
+- kubelet also contains a sub component called cAdvisor, its resposible for retrieving container metrics and expsoing them to the outside via the kubelet API.
+- enable the metrics server by downloading from git , and creating the respective pods.
+- Once the metrics server is installed we can run the kubectl top node (which provides the CPU and memory of each of the nodes), similarly kubectl top pod.
+- Application Logs:
+      - kubectl logs -f event-pod
+      - if there are multiple containers in a pod. then use below command.
+         - kubectl logs -f <pod-name> <container-name>
 
