@@ -41,11 +41,22 @@
 - kubectl get pods --selector environment=production,tier=frontend 
   (select pods using lables and selectors)
 - kubectl apply -f yml_defnition.yml (declarative approach)
+- kubectl set image deployment-name nginx=nignx:1.4
+  (this changes the image name of the deployment , without making updates to the deploymeny yaml file)
 
 - kubectl taint nodes node-name key=value:taint-effect
   (taint the nodes with the effect in key value format; taint-effect has three options Noschedule| PreferNoSchedule | NoExecute)
 
+
 - kubectl label nodes node01 size=Large (label that particular node to size large so that we can use this in the nodeSelector in the pod yaml file to assign pod to this node)  
+
+- kubectl rollout status deployment/myapp-deployment
+  (rollout status)
+- kubectl rollout history deployment-name
+  (history of rollouts done)
+- kubectl rollout undo deployment-name
+  (undo a deployment and rollback to the previous version)
+
 ```
 Certification Tips - Imperative Commands with Kubectl
 While you would be working mostly the declarative way - using definition files, imperative commands can help in getting one time tasks done quickly, as well as generate a definition template easily. This would help save considerable amount of time during your exams.

@@ -490,5 +490,261 @@ The kubelet automatically tries to create a mirror Pod on the Kubernetes API ser
 - Application Logs:
       - kubectl logs -f event-pod
       - if there are multiple containers in a pod. then use below command.
-         - kubectl logs -f <pod-name> <container-name>
+         - kubectl logs -f pod-name container-name
+- https://kubernetes.io/docs/tasks/debug-application-cluster/resource-usage-monitoring/
+- https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/
 
+## 4.0 Application Lifecycle Management:
+
+- We discuss about the rolling update deployments,configure applications, self healing and scale applications.
+
+### 4.1 Rolling updates & Rollbacks:
+
+- When you create a deployment it triggers a rollout which creates a new revision. ex: first one revision 1
+- When the container version is upgraded a new deployment is created with revision 2. 
+- Run the below command to check the rollout status (kubectl rollout status deployment/myapp-deployment)
+- We can also check the history of rollouts(kubectl rollout histiry deployment-name)
+- There are two kinds of deployment strategies:
+   - Recreate: Destroy the running containers and create the new ones. Application will have some downtime. this strategy is recreate  strategy
+   - Rolling Update: it is the default deployment strategy. it takes container down at a time and updates the same. Almost everyone follows this strategy.
+![alt text](imgs/deploy.PNG "")
+- How the upgrade works under the hood?
+   When you run a new deployment the k8s creates a  new replica set and deploys the new containers , same time taking down the containers in the old replicaset. one by one.
+- to rollback a deployment do the undo command.(kubectl rollout undo deployment-name)
+
+### 4.2 HOrizontal Pod Autoscaling:
+ https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+
+   https://medium.com/avmconsulting-blog/horizontal-pod-autoscaler-hpa-in-kubernetes-part1-afba286becf
+
+
+### 4.3 Configuring Applications:
+- configuring applications comprises of understanding the following concepts.
+   - configuring command and arguments on applications.
+   - Configuring Environment Variables
+   - Configuring Secrets.
+- **Configuring Commands & Arguments:** - when you run a  docker cotainer from a ubuntu image. (docker run ubuntu) it exsists immediately.
+            unlike VM , containers are not meant to host a OS. its meant to run only to run certain processes. If the processes inside the container is stopped container exsists.
+            how to know what process runs inside the container once it starts. its defined in the dockerfile of the image being pulled. 
+            Ex: if we pull an nginx image docker file, at the end it does have CMD ['nginx']
+            Similarly, for ubuntu the command is ['bash'],  unlike nginx bash isnt a web server it checks for the input from the terminal, if it doesnt find one it exists.
+            we need to specify the input to  bash terminal like "docker run ubuntu sleep 5", how to make that change permanent. to do that we create a new image out of a base image and specify the command to be run at the bottom of docker file like below example.
+            Ex: ["command", "param"] the command should be always executable command . I can run the ubuntu now as CMD ["sleep", "5"]
+            build a docker image out of it using "docker build -t ubuntu-sleeper . "
+            - Suppose if you want to change the CMD command input to something else while starting the container say 10, we dont have to pass it as "docker run ubuntu-sleeper sleep 10"
+               we can just say "docker run ubuntu-sleeper 10" , the value 10 will automatically picked by our new container by using the ENTRYPOINT in dockerfile.  
+               So whatever you append to the docker command after mentioning the ENTRYPOINT in the docker file , it gets appended to it.
+            - What if we dont mention the value of 10 while running the docker run command, if throws an error, to avoid this we  need to use  both ENTRYPOINT and CMD, here CMD is the default value that gets appended to the ENTRYPOINT , if we dont mention any value during the docker run command.
+            - if you want to mention a different entry point then use the command . "docker run --entrypoint sleepXYZ  ubuntu-sleeper 10"
+
+
+```
+FROM ubuntu
+
+ENTRYPOINT ["sleep"]
+
+CMD ["5"]
+```
+```
+FROM debian:bullseye-slim
+
+COPY docker-entrypoint.sh /
+COPY 10-listen-on-ipv6-by-default.sh /docker-entrypoint.d
+COPY 20-envsubst-on-templates.sh /docker-entrypoint.d
+COPY 30-tune-worker-processes.sh /docker-entrypoint.d
+ENTRYPOINT ["/docker-entrypoint.sh"]   #executes at the startup of the container for once.
+
+EXPOSE 80
+
+STOPSIGNAL SIGQUIT
+
+CMD ["nginx", "-g", "daemon off;"] #get appended to the ENTRYPOINT script.  
+```
+
+   - Now lets create a pod using the ubuntu-sleeper image created above.
+   -  apiVersion: v1
+      kind: Pod
+      metadata:
+         name: ubuntu-sleeper-pod
+      spec:
+         containers:
+         -  image: ubuntu-sleeper
+            image: ubuntu-sleeper.
+            args: ["10"] # Anything that we  append to the docker run command, like in the above mentioned example it  goes in the args property of POD Definiton file.
+            command: ["sleepXYZ"] #to override the ENTRYPOINT in the dockerfile.
+   - With the args we can replace the CMD of the docker file. Similarly, to override the ENTRYPOINT in the use the commands field
+
+- **Configuring Environment Variables:**   We can give the env variables value directly in the pod definition file.
+   spec:         
+      containers:
+      - name: ubuntu
+        ports:
+         - containerPort: 8080
+        env:  #Plain Key Value
+         - name: APP_COLOR
+           value: pink    
+- we can also pass the environment variables from ConfigMaps and Secrets. using the below,
+      env:
+      - name: APP_COLOR
+        valueFrom: #fetching values from configmaps
+          configMapKeyRef:
+            name: app-config
+            key: APP_COLOR
+      
+       OR
+
+       env:
+       - name: APP_COLOR
+         valueFrom: #fetching values from secrets.
+            SecretKeyRef:
+![alt text](imgs/env.PNG "")
+![alt text](imgs/env0.PNG "")
+
+- **ConfigMaps:** 
+   - configMaps are created in the key value format , so that they can be passed in to the pod dfenition file.
+   - 1) creating a configMap:  Imperative (kubectl create configmap) config-name  --from-literal=key=value
+                              Ex: kubectl create configmap app-config --from-literal=APP_COLOR=blue   (keep adding --from-literal for more env variables declaration)
+
+                              Declarative(kubectl apply -f configmap.yml)
+                             apiVersion: v1
+                              kind: ConfigMap
+                              metadata:
+                              name: app-configmap
+                              spec:
+                              APP_COLOR: blue
+                              APP_MODE: prod
+
+                              Create as many configmaps as needed with relevant naming convention.
+   - 2) Injecting into a pod: it can be done in 3 wayd ,
+         1) To inject an env variable use envFrom 
+         envFrom:
+            - configMapRef:
+                 name: app-config
+         2) Single Env using the env 
+            env:
+             - name: APP_COLOR
+               valueFrom: #fetching values from secrets.
+               configMapKeyRef:
+                   name: app-config
+                   key: APP_COLOR
+         3) using Volumes
+            volumes:
+            - name: app-config-volume
+              configMap: 
+                 name: app-config   
+
+![alt text](imgs/config.PNG "")
+![alt text](imgs/config1.PNG "")
+![alt text](imgs/config2.PNG "")
+
+- **Secrets:**
+   - We can use environment varibles for DB username and passwords and other connectivites, but thats not a good idea as they are not secure.
+     this is the reason on top of configmap we use secrets to store sensitive information. they are similar to configmap but they are encoded in base64 format.
+
+   - Like configmap we can create secrets using both imperative and declarative ways. (kubectl create secret generic secret-name )
+      refer yaml file of configmap for declarative way.
+   - All the  values in the secrets should be base64 encoded. to covert the normal values into base 64 encoding use  
+      echo -n 'mysql' | base64
+      To decode > echo -n '5qvu=' | base64 --decode
+
+   - injecting a secret into a pod: same way as we inject the configmaps including the 3 ways as configmaps.
+            envFrom:
+            - secretRef:
+                 name: app-config
+   - all the secrets should be created as filename which includes the secret.
+![alt text](imgs/secret.PNG "")
+![alt text](imgs/secret1.PNG "")
+![alt text](imgs/secret2.PNG "")
+![alt text](imgs/secret4.PNG "")
+![alt text](imgs/secret3.PNG "")
+
+### 4.4 Multi Container Pods:
+
+- having two or more pods running inside a pod.
+- Microservcies architecture , helps us breaking large application into small chunks and work as an individual member.
+- Most of the times we may require a logging agent and web/application should be paried with each other.
+- that is the reason we have multi container pod i.e they are created together and destroye together. they share the same network space.  they can refer to each other as localhost and same volumes.
+- this way u dont have to establish volume sharing and services to enable communication b/w them.
+- to create a multi container pod , add another pod in the spec section in pod definition yaml.
+
+- Multi-container PODs Design Patterns
+   There are 3 common patterns, when it comes to designing multi-container PODs. The first and what we just saw with the logging service example is known as a side car pattern. The others are the adapter and the ambassador pattern.
+
+### 4.5 Init Containers:
+
+- In a multi-container pod, each container is expected to run a process that stays alive as long as the POD's lifecycle. For example in the multi-container pod that we talked about earlier that has a web application and logging agent, both the containers are expected to stay alive at all times. The process running in the log agent container is expected to stay alive as long as the web application is running. If any of them fails, the POD restarts.
+
+
+
+- But at times you may want to run a process that runs to completion in a container. For example a process that pulls a code or binary from a repository that will be used by the main web application. That is a task that will be run only  one time when the pod is first created. Or a process that waits  for an external service or database to be up before the actual application starts. That's where initContainers comes in.
+
+
+
+- An initContainer is configured in a pod like all other containers, except that it is specified inside a initContainers section,  
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp-pod
+  labels:
+    app: myapp
+spec:
+  containers:
+  - name: myapp-container
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  initContainers:
+  - name: init-myservice
+    image: busybox
+    command: ['sh', '-c', 'git clone <some-repository-that-will-be-used-by-application> ; done;']
+```
+
+- When a POD is first created the initContainer is run, and the process in the initContainer must run to a completion before the real container hosting the application starts. 
+
+- You can configure multiple such initContainers as well, like how we did for multi-pod containers. In that case each init container is run one at a time in sequential order.
+
+- If any of the initContainers fail to complete, Kubernetes restarts the Pod repeatedly until the Init Container succeeds.
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp-pod
+  labels:
+    app: myapp
+spec:
+  containers:
+  - name: myapp-container
+    image: busybox:1.28
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  initContainers:
+  - name: init-myservice
+    image: busybox:1.28
+    command: ['sh', '-c', 'until nslookup myservice; do echo waiting for myservice; sleep 2; done;']
+  - name: init-mydb
+    image: busybox:1.28
+    command: ['sh', '-c', 'until nslookup mydb; do echo waiting for mydb; sleep 2; done;']
+
+```
+
+https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+
+
+### 4.6 Self healing Containers:
+
+- Kubernetes supports self-healing applications through ReplicaSets and Replication Controllers. The replication controller helps in ensuring that a POD is re-created automatically when the application within the POD crashes. It helps in ensuring enough replicas of the application are running at all times.
+- Kubernetes provides additional support to check the health of applications running within PODs and take necessary actions through Liveness and Readiness Probes. However these are not required for the CKA exam and as such they are not covered here. 
+
+https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+
+https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+
+
+
+## 5.0 Cluster Maintenance:
+
+-  We need to know about the cluster upgrade process, upgrading the os and patching and Backup & Restore Methodologies.
+### 5.1 OS Upgrades:
+
+- 
