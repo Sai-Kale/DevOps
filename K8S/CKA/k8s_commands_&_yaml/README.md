@@ -8,6 +8,8 @@
   (creates a sample yml file for the pod creation)
 - kubectl get pods
   (gets the information about the list of current running pods)
+- kubectl get pods -o wide 
+  (gives additional information like IP and node on which pods are running)
 - kubectl describe pod {pod_name}
   (describes the infirmation relavant to that pod.)
 - kubectl apply -f pod.yml
@@ -56,6 +58,16 @@
   (history of rollouts done)
 - kubectl rollout undo deployment-name
   (undo a deployment and rollback to the previous version)
+
+- kube-controller-manager --pod-eviction-timeout=5m0s
+  (pod eviction timeout setting)
+- kubectl drain node-1
+  (drain pod of the nodes)
+- kubectl cordon node-01
+  (make the node unschedulable)
+- kubectl uncordon node-01
+  (make the node schedulable from unschdulable)
+
 
 ```
 Certification Tips - Imperative Commands with Kubectl

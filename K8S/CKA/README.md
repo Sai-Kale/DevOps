@@ -747,4 +747,141 @@ https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-read
 -  We need to know about the cluster upgrade process, upgrading the os and patching and Backup & Restore Methodologies.
 ### 5.1 OS Upgrades:
 
-- 
+- Lets consider there are 3 nodes in the cluster, if one of the node went down for more than 5 min k8s considers this as dead and evicts the pods inside them known as pod eviction.
+- if the pods inside that are part of replicaset then will spun up in the nodes that are available.
+- We can control the pod eviction time out as well. (kube-controller-manager --pod-eviction-timeout=5m0s)
+- If the node comes back online after the pod eviction timeout it comes as a blank node. if the pods running on this node are not a part of replica set they are gone.
+- to upgrade the any one of the nodes we can purposefully drain the pods within node to move to other nodes available.
+- Under the hood , the node which is drained  pods are gracefully brought down, and brought up in other nodes.
+- Once you drain the node and the pods are running on other nodes and safe we can reboot that node and perform the upgrade.(kubectl drain node-1)
+- But the challenge is when it comes back online the node is unscheduleable for that we need to uncordon the node, by running command (kubectl uncordon node-01)
+- Note: we can also make a node unschedulable by cordoning it, run command (kubectl cordon node-02) so that no new pods will be scheduled on this node.
+
+### 5.2 K8S Releases:
+
+- When we install a K8S in cluster we install a sepcific version of K8S. We can see that when we execute (kubectl get nodes ) in the version coloumn. 
+- K8S release version consists of three parts major.minor.patches( v1.1.3)
+- In K8s all the components have same version number, except the ETCD cluster and core DNS (they have their own releases)
+
+https://kubernetes.io/docs/concepts/overview/kubernetes-api/
+
+### 5.3 Cluster Upgrade Process:
+
+- There is a mechanism in the cluster upgrade process
+- Refer the below pics for the same.
+![alt text](imgs/upgrade.PNG "")
+- At any given time only 3 versions are supported by k8s. if 1.13 is released only 1.12 and 1.11 are supported.
+![alt text](imgs/upgrade1.PNG "")
+- if its a managed server  with some cloud it lets you upgrade the server with just few simple clicks.
+- if you deployed the cluster from scratch then you manually do the upgrade.
+- Upgrading the cluster requires two major parts first upgrading the Master and then the nodes.
+- While the master being updated doesn't mean the worker nodes stop working they serve the traffic as it is. All the items relevant to the kubectl and controller mgr doesnt work.
+-  Once the master is up and back online we are good to go.
+- Coming to the worker nodes we can bring down the application and upgrade all at once but that requires downtime.
+- Othere way is to shift pods to other working nodes and bring each one down and upgrade.
+- Last approach is to spin up new nodes with upgraded version and shift the workload to there. this can be achieved easily in cloud base k8s.
+
+- In order to upgrade master from 1.11 to 1.12, please run (kubeadm upgrade plan) it gives all the information related to upgrade, kubelet must be upgraded seperately.
+![alt text](imgs/upgrade3.PNG "")
+- We cant upgrade mutiple versions at once. we can only upgrade one minor version at a time.
+   - First upgrade kubeadm to 1.12 (apt update, apt install kubeadm=1.12.0-00 or  apt-get upgrade -y kubeadm=1.12.0-00)
+   - next upgrade the cluster (kubeadm upgrade apply v1.12.0)
+   - It pulls the necessary images and completes the upgrade.
+   - if you run kubectl get nodes command you will still get the older version. **it shows the version of the kubelet associated with the nodes not the api-server itself**
+   - Next step is to upgrade the kubelets. (apt-get upgrade -y kubelet=v1.12.0)
+   - systemctl restart kubelet
+   - now run kubelet get nodes you will see the updated version of the master and the worker  nodes still at lower version.
+   - now upgrade the worker nodes.
+      - Drain the pods running on the first worker node using (kubect drain node01). this makes sures all the pods running are moved to the other running nodes. it also cordons the node01 so that no new pods get scheduled on this node01.
+      - now run the upgrade command (apt-get upgrade -y kubeadm=v1.12.0) followed by upgradtion of kubelet (ap-get upgrade -y kubelet=v1.12.0)
+      - Now update the node configuration for the new kubelet version (kubeadm upgrade node config --kubelet-version v1.12.0)
+      - now restart the kubelet (systemctl restart kubelet). the node should be now be up, make the node01 up schedulable by uncordoning it. (kubectl uncordon node-1)
+         Note: the pods doesnt automatically come back on this node. only if those pods belongign to the node01 are deleted on other nodes, they will come back on this node01
+      - similary upgrade all the remaining worker nodes.
+      
+
+### 5.4 Backup and Restore:
+
+- Whats needs to be backedup in a K8S cluster?
+   - K8S configuration
+   - ETCD Cluster
+   - Persistent Volumes
+- **Resource Configuration:**
+         - We created the secrets, configmaps and namespace using imperative and declarative approach.
+         - Declarative is preferred approach to save the configgurations. We need have a copy of these files all the time.
+         - we need use SCM(GitHub) to store this configurations. even if we lose entire configuration we can just apply these files to restore the same.
+         - But what if any one of the team member changed the configration using the imperative way and we didnt know?
+         - The solution to the above problem is querying the kube-apiserver and storing the same at regular intervals (ex" kubectl get namespaces -all-namepaces -o yaml > namespace.yaml)
+         - we might have independent tools that manage and backup the k8s cluster etc.,..
+- **ETCD DB:**
+         - ETCD DB is where are the cluster related information is stored.
+         - We need to backup the ETCD server, as its hosted on master node. there is a directory whil confiuring the ETCD where all the information is stored. (--data-dir=/var/lib/etcd )
+           that is the directory that needs to be backedup in order to store the information.
+           ![alt text](imgs/backup.PNG "")
+         - ETCD also comes with a built in snapshot backup. (ETCD_API=3 etcdctl snapshot save /etc/backup/snapshot.db )
+         ![alt text](imgs/backup1.PNG "")
+         - How to restore from a etcd snashot. first stop the kube-apiserver(service stop kube-apiserver) then restore (ETCDCTL_API=3 etcdctl snapshot restore snapshot.db --dat-dir /var/lib/etcd-frombackup). then relaod the service daemon(systemctl daemon-reload) and restart the etcd service(service etcd restart)
+         ![alt text](imgs/backup2.PNG "")
+         - fibnally start the kube-apiserver.
+         - Note: With all the etcdctl commands mention the --cacert, --cert and --key and endpoints.
+         ![alt text](imgs/backup3.PNG "")
+         - Note: if we are using the managed k8s server then backing up may not have access. then backup using querying the kube-apiserver is the better approach (ex: EKS,GKE,AKS)
+
+```sh
+
+Working with ETCDCTL
+
+
+etcdctl is a command line client for etcd.
+
+
+
+In all our Kubernetes Hands-on labs, the ETCD key-value database is deployed as a static pod on the master. The version used is v3.
+
+To make use of etcdctl for tasks such as back up and restore, make sure that you set the ETCDCTL_API to 3.
+
+
+
+You can do this by exporting the variable ETCDCTL_API prior to using the etcdctl client. This can be done as follows:
+
+export ETCDCTL_API=3
+
+On the Master Node:
+
+
+
+
+
+To see all the options for a specific sub-command, make use of the -h or --help flag.
+
+
+
+For example, if you want to take a snapshot of etcd, use:
+
+etcdctl snapshot save -h and keep a note of the mandatory global options.
+
+
+
+Since our ETCD database is TLS-Enabled, the following options are mandatory:
+
+--cacert                                                verify certificates of TLS-enabled secure servers using this CA bundle
+
+--cert                                                    identify secure client using this TLS certificate file
+
+--endpoints=[127.0.0.1:2379]          This is the default as ETCD is running on master node and exposed on localhost 2379.
+
+--key                                                      identify secure client using this TLS key file
+
+
+
+
+
+Similarly use the help option for snapshot restore to see all available options for restoring the backup.
+
+etcdctl snapshot restore -h
+
+For a detailed explanation on how to make use of the etcdctl command line tool and work with the -h flags, check out the solution video for the Backup and Restore Lab.
+
+```
+
+## 6.0 Security:
