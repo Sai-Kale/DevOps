@@ -885,3 +885,163 @@ For a detailed explanation on how to make use of the etcdctl command line tool a
 ```
 
 ## 6.0 Security:
+
+- In general in order to make the host secure we diable passwordf based authentication and enable only SSH access.
+- Here our focus in mainly on K8S related security. 
+- kube-apiserver is center of all the actions in K8S server.
+- thats the first line of defence controlling the access to the K8S server.
+- Who can access the cluster? is given by the below methods
+- The level of acces to the kube-apiserver is acheieved using various ways.
+      - Files - usernames and passowords
+      - Files - usernames and tokens
+      - Certificates
+      - External authentications provider LDAP
+      - Service Accounts.
+- Once access is given what can they do? is given by the below.
+      - RBAC authorization
+      - ABAC authorzation
+      - Node Athorization
+      - webhook mode.
+- All communication within the cluster by the apiserver is secured using the TLS certificates.
+- What about the communication between the application by the pods within the cluster. By default all the pods can access all other pods within the cluster we can restrict them using the **Network Policies**.
+
+### 6.1 Authentication :
+
+- Securing the access to the k8s cluster.
+- K8s doesnt manage users naturally, it relies on a file with users, external source or LDAP.
+- However K8S can manage service accounts, we will check this later.
+- All user access is managed by the kube-apiserver. kube-apiserver authenticates the user before granting access. how does it authenticate ?
+   - Different authentication mechanisms can be configured:
+      - **Static Password File** : we cn create a csv file with usernames, password and their userid. we can pass the file name as an option to the kube-apiserver service.
+        In case if you setup the server using the kubeadm tool, we can modify the yaml file and add the --basic-auth-file and restart the kube-apiserver.
+        We can also have a fourth coloumn in csv file as group name. then we can authenticate using the user & passowrd verifyinh via curl command.
+      - **static token file** : Similarly instead of password file we can have a token file. similarly verify authentication using the token.
+   - However the above two approaches are not recommended as they store the details in the raw format. Lets see other two methods. if you are trying the abov setup in case try volume mount of auth file and setup RBAC for the new users.
+
+```sh
+Article on Setting up Basic Authentication
+Setup basic authentication on Kubernetes (Deprecated in 1.19)
+Note: This is not recommended in a production environment. This is only for learning purposes. Also note that this approach is deprecated in Kubernetes version 1.19 and is no longer available in later releases
+
+Follow the below instructions to configure basic authentication in a kubeadm setup.
+
+Create a file with user details locally at /tmp/users/user-details.csv
+
+# User File Contents
+password123,user1,u0001
+password123,user2,u0002
+password123,user3,u0003
+password123,user4,u0004
+password123,user5,u0005
+
+
+Edit the kube-apiserver static pod configured by kubeadm to pass in the user details. The file is located at /etc/kubernetes/manifests/kube-apiserver.yaml
+
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - kube-apiserver
+      <content-hidden>
+    image: k8s.gcr.io/kube-apiserver-amd64:v1.11.3
+    name: kube-apiserver
+    volumeMounts:
+    - mountPath: /tmp/users
+      name: usr-details
+      readOnly: true
+  volumes:
+  - hostPath:
+      path: /tmp/users
+      type: DirectoryOrCreate
+    name: usr-details
+
+
+Modify the kube-apiserver startup options to include the basic-auth file
+
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - kube-apiserver
+    - --authorization-mode=Node,RBAC
+      <content-hidden>
+    - --basic-auth-file=/tmp/users/user-details.csv
+Create the necessary roles and role bindings for these users:
+
+
+
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: default
+  name: pod-reader
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+ 
+---
+# This role binding allows "jane" to read pods in the "default" namespace.
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: read-pods
+  namespace: default
+subjects:
+- kind: User
+  name: user1 # Name is case sensitive
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role #this must be Role or ClusterRole
+  name: pod-reader # this must match the name of the Role or ClusterRole you wish to bind to
+  apiGroup: rbac.authorization.k8s.io
+Once created, you may authenticate into the kube-api server using the users credentials
+
+curl -v -k https://localhost:6443/api/v1/pods -u "user1:password123"
+
+```
+### 6.2 TLS Certificates:
+
+- Consider logging into the banking server without TLS the username and password as sent as plain text to the server. Any middle man attacks could easily know the credentials.
+   So we need to encrypt those details while sending them to the server using **encryption**.  We can decrypt them using a key, so a key is also send over the internet to the server. The attacker can sniff that as well and hack credentails. This is called **symmetric encryption**. This is the reason **Asymmetric encryption** comes in.
+   Instead of using a single key, asymmetric encryption uses a pair of keys a private and public key.  this is similar to SSH key pair based access
+![alt text](imgs/ssh.PNG "")
+   - SSH: we generate a key pair using the ssh-keygen. it generates private and public keys. the public key is copied over to the server which we access frequently and placed under the /.ssh/authorized_keys . it can be authroized using only the public key of the relavant user. then we ssh without password dierctly using the private key ssh -i id_rsa sai@server1 . we can copy the public key and place it on as many servers as we want. similar process can be followed to the other users as well. this eliminates the risk of symmetric encryption.
+   ![alt text](imgs/ssh1.PNG "")
+   - The username and password that we send over the internet will be ecnrypted and we need to somehow send the key to decrypt the data to the server safely. to securely transfer the symmetric key from client to server we use asymmetric encryption. we generate a public and private key on the server. we use the below commands for that purpose unlike ssh.
+   (openssl genrsa -out my-bank.key 1024)  and (openssl rsa -in my-bank.key -pubout > mybank.pem)
+   - "When you enter https://mybank.com you get the public_key from the server, lets assume even the hacker got the access to the public key. The symmetric key is  then again encrypted using the public key provided by the server. then the client sends that to the server and hacker also knows the same. the server then uses the private key to decrypt the message and get the symmetric key. when user send the encrypted details to the server, it uses the symmetric key to decrypt the same. However the hacker doesnt have the private key of the server to decrypt the message. so the hacker cant get the symmetric key.  with asymmetric key we secured the connection and symmetric key ensures all the future communication b/w them is secure."
+   ![alt text](imgs/ssh2.PNG "")
+   - Now the only way hacker can hack is by using your credentials, he then creates a web server that looks exactly like you bank server. he wants you to believe that its genuine to so he configures his own set of public and private key pairs. he someone manages to tweak  your network to redirect that to his server. you recieve a public key provided by the hacker. how will you know if you receive a public key and know that its sent genuinely by the bank? **when the bank server sends the public key it sends the certificate along with the key within, it looks like an actual certificate . it has all the details of the certificate. it has all the alternative domain names as well with which the bank is serving the requests. Even the hacker can generate teh certificates as well. This is where the most important part comes in. who signed and issued the certificate. if you signed the certificate yourself and issued the same its called self signed certificate. If you look at the certificate signed by the hacker closely you can see its signed by self and a fake certificate. In fact the browser does that for you, it actually auto verifies the certificate, if it finds it to be a fake certificate then it actually warns you. Then how do you create a legitimate certificate that web browser will trust and how do you get the certificate signed by someone with authority? That is where the CERTIFICAATE AUTHORITY(CA) comes in. They are well known organizations that can sign and validate certificates for you   (symantec, global sign, digicert etc.,..) It works by generating a certificate signing request (CSR) using the key we generated earlier and bank domain name ( openssl req -new -key my-bank.key -out my-bank.csr -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=mydomain.com" )  that should be be sent to the CA for signing. The CA verifies the details and sign the certificate and send it back to you. Now your certificate got signed by CA that browsers trust. Hacker would be rejected by CA. CA use different techniques to make sure you are the actual owner of the certificate. how will the browser know if the CA signature was genuine ? the CA themselves have set of public and private keys. The CA use their private keys to sign the certificates, the public keys of the CA are built in into the browser. The browser uses the public key to verify the signature(private key). However, they dont help validate certificates for sites hosted privately. For that we can host our own private CA. Companies provide that services as well. You can have the private and public key generated by CA and sue the public key to install on all the employees system broswers and establish the secure connection within the browser**
+
+    ![alt text](imgs/ssh3.PNG "")
+     ![alt text](imgs/ssh4.PNG "")
+      ![alt text](imgs/ssh5.PNG "")
+       ![alt text](imgs/ssh6.PNG "")
+   - The server generated key pair for SSH, web server generates for https, CA generates it for serving certificates. End user goal is only single symmetric key.
+   - What is the server whats to verify if the client is same who they say they are in the intial trust buildup, then the client sends the certificate verified by CA to the server. TLS client certificates are not generally implemented on web servers as common ppl dont generate their client certs. it all managed under the hood.
+   - This whole infrastructure of generating , mantaining and authenticating the keys is maintained by **Public Key Infrastrucutre (PKI)** 
+   - Note: when we generate key pairs we can encrypt data with any one of them and decrypt with other, generally public key is shared across.
+   - Usually certificates with public key have **.crt** or **.pem** extension. Private keys with extenstion **.key** or **-key.pem**.
+     ![alt text](imgs/ssh7.PNG "")
+       ![alt text](imgs/ssh8.PNG "")
+
+
+   - **Certificates** :  
+   - **LDAP or kerberos** :
+
+
