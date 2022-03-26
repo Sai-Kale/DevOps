@@ -38,7 +38,7 @@
   (creats the pod in dev namespace instead of default)
 - kubectl config set-context $(kubectl config current-context) --namespace=dev
   (change the default namespace)
-- kubectl get pods --all-namespaces
+- kubectl get pods --all-namespaces or kubectl get pods -A
 - kubectl get services
 - kubectl get pods --selector environment=production,tier=frontend 
   (select pods using lables and selectors)
@@ -68,6 +68,19 @@
 - kubectl uncordon node-01
   (make the node schedulable from unschdulable)
 
+- kubectl get roles
+  (gets all the roles associated )
+- kubect get rolebindings 
+  (gets all the role bindings)
+- kubectl  auth can -i create deployments
+  (to check if you have the relavant permission to perform a certain task)
+- kubectl auth can -i create deployments --as dev-user 
+  (to check if a certain user or group access)
+
+- kubectl api-resources -namspaced=true
+  (list of resources that are namespaced)
+- kubectl api-resources -namspaced=false
+  (list of resources that are not namspaced.)
 
 ```
 Certification Tips - Imperative Commands with Kubectl
