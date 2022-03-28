@@ -1315,4 +1315,197 @@ https://stackoverflow.com/questions/991758/how-to-get-pem-file-from-key-and-crt-
 
 ## 7.0 Storage:
 
-- 
+### 7.1 Docker Storage:
+
+- Docker storage has two concepts **Storage Drivers** and **Volume Drivers** (Plugins).
+- Docker stores data at local FS at /var/lib/docker.
+- It has mutiple folder within where it stores all the docker related data. we have mutiple folder under it like aufs, containers, images, volumes etc.,..
+- Docker works on Layered Architecture. Each line in a Dockerfile is one layer.
+
+```sh
+
+Dockerfile:
+
+FROM ubuntu
+
+RUN apt-get update && apt-get install python
+
+RUN pip install flask flask-mysql
+
+COPY . /opt/source-code
+
+ENTRYPOINT FLASK_APP=/opt/source-code/app.py flask run
+
+- When you run docker build -t for the above Dockerfile it builds the image in layers.
+
+Layer 1: Base ubuntu
+Layer 2: Changes in apt packages
+Layer 3: Changes in pip pkgs
+Layer 4: source code copy
+Layer 5: Update enntrypoint
+
+Layer 6: Container Layer
+
+- Now consider a different Dockerfile2 with change in COPY and ENTRYPOINT in the above Dockerfile.
+- Docker doesnt build all the layers it fetches the image from previous build cache upto 3 rd layer and builds on top of that , this way it builds the images fast and saves disk space.
+- When you run  docker run once the build is done , Docker creates a new layer called Container Layer which is writable, all the previous layers are read only. The life of this layer is only till the container is alive.
+- When you create new files docker creates them in the Container layer, What if we want to change the source code.
+- As all the previous layers that are build read only. Docker creates a copy of the source code from Read only layers in to teh container layer where we can change the source code for some testing and changes. Image will remain same all the time.
+- All the change we made in the container layer will be delete once the container is killed.\
+- To store the changes we made to the source code and any other new files we can add a Persistent Volume to the container.
+- We can create PV by using docker volume create data_volume
+- It first creates a folder in the /var/lib/docker/volumes/data_volume.
+- Now we start the container with the volume attached. docker run -v data_volume:/var/lib/mysql mysql
+- Here we are starting the mysql container where we are attaching the data_volume to the path /var/lib/mysql inside the read write layer of the container that is running.
+-So all the information written to the /var/lib/mysql is still secured after we lost the container.
+- If we dont create the volume after and run docker with the volume mount, docker automatically creates the volume for us.
+- This entire process is called volume mounting.
+- Consider we already have our at some other volume. Here we need to run dcoker command with the complete path of the volume location.
+- docker run -v /data/volume/nfs/msql:/var/lib/mysql mysql. this process is called Bind Mounting.
+- The latest docker command to attach a volume while running docker is below
+- docker run --mount type=bind,source=/data/volume/nfs/mysql,target=/var/lib/mysql mysql.
+- docker uses the storage drivers to maintain the layered approach. THere are mutiple storage drivers, depending the underlying os we use it will change.
+- Docker will choose best storage driver depending upon the type of OS installed.
+
+
+Volume Drivers:
+
+- Storage drivers help maintain storage on images and containers.
+- If you want to persist storage we want volumes. these are handled by volume plugins.
+- If helps store the volumes under /var/lib/docker/volumes there are many volume  drivers out there. (ex: azure file srtorage, gce-dokcer,RexRey etc.,.)
+- These helps us store data on to the volumes.
+- When you run docker container we can choose sepcific volumes driver like rexrey EBS to provision a volume from amazon EBS.
+```
+
+### 7.2 Container Storage Interface (CSI):
+
+- In the past K8S docker alone as container runtime engine, it source code is embedded in source code. As we have new container engines like cri-o and rkt. It was important open up and not be dependent.
+- This is where Container Runtime Interface(CRI) comes in. How an orchestration service like k8s will communicate with CRI like docker.
+- If any new container runtime is provided all it has to do is follow CRI standards to work with K8S.
+- Similarly now Container Network Interface(CNI) is developed. Now any new networking renders(flannel, cilium, weaveworks) could simply develop and  intergrate using the CNI standards with the K8S.
+- In the same fashion,  they have developed Container Storage Interface(CSI). In which mutiple volume providers (Amazon EBS) can integrate with the k8s using the CSI standards and with the help of CSI drivers.
+- CSI is universal standard not only particular to K8S. Same with the CNI and CRI as well.
+- If implemented it will allow any container orchestration tool with any storage provider with the supported plugin.
+- THere are steps that needs to be followed to create volumes. 
+   - The orchestration tool should call the create volume RPC and pass a set of details like volume name,
+   - The storage driver should implement this RPC and return the results of the operation. 
+   - Similary it should call the RPC for deleting or recreating the volume. The storage drivers should perform the same.
+
+### 7.3 Persistent Volumes in K8S:
+
+#### 7.3.1 Volumes in Docker: 
+
+   - Docker Containers are transient in nature, they are called upon when required to  process data and destroyed once finished. data is destroyed along with the container.
+   - To persist the data after the container is lost we use the Persistent Volumes.
+   - K8s also operates in a similar fashion. The pods creates are transient in nature, data processed by it gets deleted as well once the pods are deleted.
+
+- Lets take an example of a pod in which it generates a random number.
+- The number generated is stored in a folder. Now we attach a data-volume inside the pod and volume we use is the some space on the node1.
+- Once the volume is created we specify this volume under the volumemount section under spec section of yaml.
+![alt text](imgs/volume.PNG "")
+- Here in the above example we used the hostpath, this is not recommend in the muti node architecture.   As we ustilise the sapce on the node as well.
+- K8S supports different type of volumes such as NFS, FlOCKer, EBS, Azure File Storage, Google Persistent Disk.
+- If we want to store data on the AWS EBS. We mention the same under the volume section in the yaml.
+```
+Volumes:
+- name: data-volume
+  awsElasticBlockStore:
+   volumeID: <volume-id>
+      fsType: ext4
+```
+
+#### 7.3.2 PV in K8S:
+
+- When we created volumes in the previous section, the storage for the volume goes within the POD definition file.
+- If we have large number of PODs the users have to configure storage for each pod. This is not ideal.
+- Its best to maintain storage centrally. This is where PV comes in. Its a pool of PV carved by the admin from a central storage, this can be  used by user to claim the volume known as PVC.
+![alt text](imgs/PVC.PNG "")
+-  Create PV using the PV yaml and list the PV using (kubectl get pv). under the spec section in the PV check the different accessModes and capacity, hostpath is to create a volume from the nodes local directory(it shoudlnt be used in prod). Replace the hospath with the any supported storage solutions.
+![alt text](imgs/PVC1.PNG "")
+
+#### 7.3.3 PVC in K8S:
+
+- PVC and PV are two seperate things in k8s namespace. Admin creates PV and user creates PVC.
+- Once the PVC are created k8s binds the claims to the PV accroding to the properties the set on the volume.
+- K8S finds the sufficient capacity PV as per the PVC properties(RequestModes, AccessModes, VolumesModes, StorageClass) 
+- If there are mutiple matches for a single cliam and if we still need to use a particular claim we can do that by using Labels and Selectors.
+- **If there are mutiple matches for PV and there isnt any specifications then the PV uses a PVC with larger volume, and as it is a one-to-one claim we cant use the remaining space for other PVC.**
+- If there are no volumes available the PVC will remain in a pending state until newer volumes are made available to the cluster.
+- Refer the below yaml for the PVC and bind it to the PV. (kubectl get pvc)
+![alt text](imgs/PVC2.PNG "")
+- If a PVC is deleted , we can choose what needs to happen to the PV by default is set to **Retain**. We can make it to delete it. Another option is Recycle that to make data scrub an make avialable again in the PVC pool.
+
+```sh
+Using PVCs in PODs
+Once you create a PVC use it in a POD definition file by specifying the PVC Claim name under persistentVolumeClaim section in the volumes section like this:
+
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers:
+    - name: myfrontend
+      image: nginx
+      volumeMounts:
+      - mountPath: "/var/www/html"
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: myclaim
+
+
+The same is true for ReplicaSets or Deployments. Add this to the pod template section of a Deployment on ReplicaSet.
+```
+
+#### 7.3.4 Storage Class:
+
+- In the previous example we have seen have to create PV and PVC to claim that PV as volumes
+- Before we provision a PV we must provision that space on the cloud or any storage. This is called static provisioning. Every time before we create an PV we must create storage and this is not ideal.
+- It would be nice if the storage gets provisioned automatically after creating PV thats where Storage classes comes in.
+- With Storage Classes we can define a provisioner like Amazon EBS. that can automatically provision storage when a claim is made. That is called Dynamic Provisioning of Volume.
+- So we no longer need the PV to provision storage and bind to PVC,  We now have a storage class. The PV and storage is automatically created when the storage class is created.
+- We specify the storage class name in the PVC definition yaml. (PV is created automatically)
+- With each provisioner we can specify the storage type (ex: SSD etc.,.) depends upon the kind of cloud storage we use.
+- Else we can create mutiple storage class and use them in the PVC.   
+
+
+```
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+   name: pv-vol
+spec:
+   accessMode:
+      - ReadWriteOnce   
+   capacity:
+      storage: 1Gi
+   storageClassName: amazon-EBS
+   resources:
+      requests:
+         storage: 500Mi
+
+-------------
+
+apiVersion: V1
+kind: StorageClass
+metadata:
+   name: amazon-EBS
+provisioner: kubernetes.io/amzaon-pd
+
+```
+
+
+
+#### 7.3.5 StatefulSets:
+
+https://medium.com/stakater/k8s-deployments-vs-statefulsets-vs-daemonsets-60582f0c62d4
+
+https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
+
+
+## 7.0 NETWORKING:
+
