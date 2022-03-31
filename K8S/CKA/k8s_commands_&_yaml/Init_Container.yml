@@ -13,3 +13,5 @@ spec:
   - name: init-myservice
     image: busybox
     command: ['sh', '-c', 'git clone <some-repository-that-will-be-used-by-application> ; done;']
+
+

@@ -784,7 +784,7 @@ https://kubernetes.io/docs/concepts/overview/kubernetes-api/
 - In order to upgrade master from 1.11 to 1.12, please run (kubeadm upgrade plan) it gives all the information related to upgrade, kubelet must be upgraded seperately.
 ![alt text](imgs/upgrade3.PNG "")
 - We cant upgrade mutiple versions at once. we can only upgrade one minor version at a time.
-   - First upgrade kubeadm to 1.12 (apt update, apt install kubeadm=1.12.0-00 or  apt-get upgrade -y kubeadm=1.12.0-00)
+   - First upgrade kubeadm to 1.12 (apt update, apt-get install kubeadm=1.12.0-00 or  apt-get upgrade -y kubeadm=1.12.0-00)
    - next upgrade the cluster (kubeadm upgrade apply v1.12.0)
    - It pulls the necessary images and completes the upgrade.
    - if you run kubectl get nodes command you will still get the older version. **it shows the version of the kubelet associated with the nodes not the api-server itself**
@@ -1507,5 +1507,797 @@ https://medium.com/stakater/k8s-deployments-vs-statefulsets-vs-daemonsets-60582f
 https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
 
 
-## 7.0 NETWORKING:
+## 8.0 NETWORKING:
 
+- Here we focus on networking concepts in the K8S architecture.
+
+### 8.1 Networking Basics:
+
+This course is cool for entire Networking Basics: https://www.youtube.com/watch?v=IPvYjXCsTg8&list=PL9gnSGHSqcnoqBXdMwUTRod4Gi3eac2Ak&index=3&t=1492s
+
+
+- Here we go through the basics of networking concepts like below.
+   - Switching & Routing
+   - DNS
+   - Network Namespaces
+   - Docker Networking
+
+**Switching & Routing:**
+
+
+- We have 2 computers A and B. How does A reach B , we connect them thorugh a switch and switch creates a network containing the two systems.
+- To connect through a switch we need an network interface on each host (Physical or Virtual) .
+- We see the network interfaces for the host we use the command ( ip link) eth0.
+- Let assume the Switch has an IP address 192.168.1.0 , then we assign the system with IP addresses on the same network using the command ( ip addr add 192.168.1.10/24 dev eth0)
+- Once they are assinged the ip then can send and receive the packets within the same network.
+![alt text](imgs/ip.PNG "")
+- If we have another network with different IP range,  how does two networks interact with each other, thats where routers come in.
+- Router is like another server with many network ports, since it connects two networks it gets assgined two IP addresses one on each different networks.
+- When the packets are sent from one network to another, how does the system know where the router is on the network to send the packet through.
+- The router is just another device on the network there could be many such devices on the network.
+- This is where Gateway comes into picture. 
+- type (route) in the kernel to see the routes configured on our system. If nothing is configured we can bascially send the packets within our own network.
+- We need to add a route (ip route add 192.168.2.0 via 192.168.1.1) to send packets to the IP outside of our network.
+![alt text](imgs/ip2.PNG "")
+- As we dont know all the destination IP address. we need a simple rule to redirect all the request
+- For any network we dont know the route to use this router as the default gateway.
+- This way any request sending it to the outside of this particular network goes through that router.
+- A 0.0.0.0 field in the gateway feild in the route command indicates that you dont need a gateway as destination Ip is within its own network
+- SO if we have issues regarding the internet the route table needs to have a default entry for destination.
+
+**Setting Linux Host as a Router:**
+
+- Lets consider we have 3 hosts A,B and C. A and B are conected to a network 192.168.1.0 , B and C to another 192.168.2.0 .
+- Host B is connected to both the networks via eth0 and eth1.
+- if we try connecting from Host A to Host C , it say network un reachable.
+- We need to tell Host A the gateway to host c if through Host B. we can do that by ng a routing table entry and vice versa.
+- But default packets that reach Host B on eth0 cant be transferred by eth1 on Host B. So we still cant get the connectivity from Host A to C
+![alt text](imgs/ip3.PNG "")
+- This is beacuse of security reasons if we have somone that can send eth0 to eth1, then we can send packets from public to private requests.
+- We need to mention explicitly in the ip_forward, cat /proc/sys/net/ipv4/ip_forward is 0. set this to one and you should see that the pings go through.
+- Simply changing this values doesnt persist across the reboots, we need to change it in the /etc/sysctl.conf (net.ipv4.ip_forward=1)
+
+**DNS:**
+
+- We have two systems within the same network, we are able to ping sys B from sys A. If the second system is DB. When you "ping DB", its unaware of the host.
+- We wanna tell system A the system B can be refered as DB. Please add ( ip_address db ) in the /etc/hosts file. So the system A knows its DB.
+- Sys A takes all the names we put in /etc/hosts as granted. Translating hostname like in this the folder is knowns as Name Resolution. 
+- So how could we make sure all the system reach DB by the same name if we dont put the name in hosts file. So we moved all these hosts name and IP and manage it centrally known as DNS. That server is called DNS server. Then we lookup that server to resolve a hostname to a IP address.
+- We point the host to the DNS server by mentioning the IP of the DNS server in the /etc/resolv.conf file.
+![alt text](imgs/dns.PNG "")
+- Now we centrally maintain all the DNS hostnames for IP address. Still we can add an entry into the hosts and it still works just fine from local system.
+- If we have entry in both the DNS and local server. the host first looks in the local, if not it looks in the DNS server.
+- We can change that order in the file /etc/nssswitch.conf ( hosts: files dns) , just we need to place dns first.
+-  Generally we add the address 8.8.8.8 in /etc/resolv.conf the common name server from google that has all the DNS addresses. we can can check in our systems too.
+- we have mutiple domain names ( .com, .in, .net, .edu , .org, .io) for different organizations.
+- For www.google.com ->  . is the root and **.com** is top level domain name and **www** is the sub domain. Ex: maps.google.com (maps is the sub-domain under .com) , mail.google.com, apps.google.com
+- We begin to see a tree structure, firs the request we ping is sent to the internet, then it resolves using root DNS, .com DNS, google DNS. 
+- These requests from a certain IP are generally cached for some time so as to not to go through the entire process again.
+  ![alt text](imgs/dns0.PNG "")
+- Similar thing can be configured for our organization internal DNS server.
+- suppose we have web.mycompany.com  and if you ping web it doesnt know such DNS, so we can mention the search in the hosts file(search mycompany.com) to default the search to web.mycompany.com
+![alt text](imgs/dns1.PNG "")
+- DNS stores mutiple record types:
+   - A type: IP to hostnames
+   - AAAA name: IPv6 to hostname
+   - C name: one hostname to another name (like google.com -> www.google.com)
+![alt text](imgs/dns2.PNG "")
+- we can use nslookup but nslookup doesnt count entry in the local hostfile, so if you add a local entry it will not find it. it should be present in the DNS server.
+- We also have dig command for DNS name resolution , it returns more details than the nslookup command.
+
+
+```
+Prerequisite - CoreDNS
+In the previous lecture we saw why you need a DNS server and how it can help manage name resolution in large environments with many hostnames and Ips and how you can configure your hosts to point to a DNS server. In this article we will see how to configure a host as a DNS server.
+
+
+
+We are given a server dedicated as the DNS server, and a set of Ips to configure as entries in the server. There are many DNS server solutions out there, in this lecture we will focus on a particular one – CoreDNS.
+
+
+
+So how do you get core dns? CoreDNS binaries can be downloaded from their Github releases page or as a docker image. Let’s go the traditional route. Download the binary using curl or wget. And extract it. You get the coredns executable.
+
+
+
+
+
+
+Run the executable to start a DNS server. It by default listens on port 53, which is the default port for a DNS server.
+
+
+
+Now we haven’t specified the IP to hostname mappings. For that you need to provide some configurations. There are multiple ways to do that. We will look at one. First we put all of the entries into the DNS servers /etc/hosts file.
+
+
+
+And then we configure CoreDNS to use that file. CoreDNS loads it’s configuration from a file named Corefile. Here is a simple configuration that instructs CoreDNS to fetch the IP to hostname mappings from the file /etc/hosts. When the DNS server is run, it now picks the Ips and names from the /etc/hosts file on the server.
+
+
+
+
+CoreDNS also supports other ways of configuring DNS entries through plugins. We will look at the plugin that it uses for Kubernetes in a later section.
+
+Read more about CoreDNS here:
+
+https://github.com/kubernetes/dns/blob/master/docs/specification.md
+
+https://coredns.io/plugins/kubernetes/
+
+
+```
+**Network Namespaces:** 
+- Note : For indepth understadin check the networking course.
+- Network namespaces is used by docker to implement network isolation.
+- If the server is house, namespaces are rooms within them, they isolate and provide privacy each one.
+- As far the namespaces goes it has only the process that are specific to that namespace, however the underlying host as the visiblity of what its running.
+- The host as the network interface and route tables , but the namespaces has its own virtual network interface and underlying route and ARP tabels. With namespaces we successfully prevent it from seeing the underlying host and its network.
+- We can connect two namespace with each other using the virtual  connection.(ip link add veth-red type veth peer name veth-blue) and various other comands to establish a connection b/w them.
+- What if we have a n number of namespaces. We create a virtual switch within a host and connect all the namespaces to it.
+- We have mutiple solutions like linux bridge.
+- If you want to reach the namespace from the underlying host , add an addr to the route table in the locahost for virtual bridge and we will be able to ping the namespaces.
+- All this stuff is still private, the only door to the outside world is through the ethernet port on the localhost.
+- We establish a connection to the outisde world using the gateway(localhost) and outside stuff is reached using the NAT.
+
+
+**Docker Networking:**
+
+- A server with docker installed connects to the local host network via eth0 interface on IP address 192.168.1.10.
+- When u run a container we have different networks to choose from (docker run --network none nginx) runs continer with no network. We can also run with  the host network which uses same network as host. If you wish to run another container that share the same host network it doesnt work as we already have one that shares the localhost networking.
+- Two process cant listen to the same port at the same time.
+- Another networking option is the bridge, in this case an internal private network to which the docker containers attach to. (this is what docker does mostly)
+![alt text](imgs/docker.PNG "")
+- When you run docker it create internal private network called bridge (docker network ls)
+- On the host its created by the name docker0. Docker internally uses the network namespacing techniques.
+![alt text](imgs/docker1.PNG "")
+- The bridge network is like an interface to the host, but it also acts as a switch to the containers within the host.
+- ip netns (to list the namspaces created by docker) there is a minor tweak that needs to done. to get the results.
+- docker inspect container_id (gvies the namespces id as well)
+![alt text](imgs/docker2.PNG "")
+- Docker creates a connection to the bridge using the same method as network namespacing.
+![alt text](imgs/docker3.PNG "")
+- Lets take an example for nginx 
+- We can reach this nginx network via the localhost using the IP address of the container and port 80. to avoid this we run container using the port mappig feature.
+  docker run -p 8080:80 nginx
+- docker forwards this traffic from one port to another , docker makes changes to the ip tables to include this forwarding happen.
+
+**Container Networking Interface:**
+
+- Network Namespaces are created as described earlier in docker  networking or network namespaces.
+![alt text](imgs/cni.PNG "")
+- Almost all the networking solutions work in the same way, hence why code and develop mutiple times , code a single program. This is for the bridge network lets call this a bridge.
+- bridge add container_id namespace (its creates all the reamaining steps to create a bridge for container to interact to with the localhost)
+- If we want to create such bridge code for a new networking solution, it should have certain standard arguments to support.
+- Thats where CNI comes in, it sets the standards in which the networking solutions should use,and the code they develop are known as plugins. (Ex: Bridge Plugin)
+- CNI defines how the plugin needs to be developed and interacted with the container run times. see below
+![alt text](imgs/cni1.PNG "")
+- There are many such plugins developed using the CNI standards (Docker doesnt support the CNI standards instead uses Container Networking Model (CNM))
+- 3rd party developers also develop these plugins using the CNI standard that work with all container runtime engines.
+![alt text](imgs/cni2.PNG "")
+- We can run a dcoker container without network and manually invoke this plugin (workaround for docker to use the CNI netowork plugin)
+
+### 8.2 CNI for K8S:
+
+- Each node in K8S must have one interface to connect to network. Each interface must have an address.
+- The Host (eaach node) must have a unique mac address  and hostname set.
+- There are few ports that needs to be opened as well.
+   - Master - 6443 -apiserver
+   - Worker node - 10250 - kubelet 
+   - master- kube controller maanger - 10252
+   - worker - expose applications to world - 30000-32767
+   - master - etcd -2379 (2380 ETCD clients can talk to each other for multiple etcd DB)
+![alt text](imgs/cni3.PNG "")
+- Commands for network debugging.
+![alt text](imgs/cni4.PNG "")
+
+```
+Important Note about CNI and CKA Exam
+An important tip about deploying Network Addons in a Kubernetes cluster.
+
+
+
+In the upcoming labs, we will work with Network Addons. This includes installing a network plugin in the cluster. While we have used weave-net as an example, please bear in mind that you can use any of the plugins which are described here:
+
+https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+https://kubernetes.io/docs/concepts/cluster-administration/networking/#how-to-implement-the-kubernetes-networking-model
+
+
+
+In the CKA exam, for a question that requires you to deploy a network addon, unless specifically directed, you may use any of the solutions described in the link above.
+
+
+
+However, the documentation currently does not contain a direct reference to the exact command to be used to deploy a third party network addon.
+
+The links above redirect to third party/ vendor sites or GitHub repositories which cannot be used in the exam. This has been intentionally done to keep the content in the Kubernetes documentation vendor-neutral.
+
+At this moment in time, there is still one place within the documentation where you can find the exact command to deploy weave network addon:
+
+
+
+https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/#steps-for-the-first-control-plane-node (step 2)
+```
+
+### 8.3 POD Networking:
+
+- We know there is a network that connects the nodes. Now let us see the network that connects the PODs across the nodes and within them as well.
+- K8S does not have a built in solution for this, we to install 3rd party providers for this.
+- There are few rules k8s set for us to follow:
+   - Every POD should have an IP address
+   - Every POD should able to communicate to every other POD in the same node.
+   - Every POD should be able to communicate to every other POD in other nodes without NAT.
+- There are netoworking solutions out there like (flannel, weave net etc.,..)
+![alt text](imgs/po.PNG "")
+   - Let us consider there are 3 nodes , each node will have a an IP address.
+   - When containers are created inside them K8S creates network namespaces for them, to enable communication we attach these namespace to a network like bridge network.
+   - We createa bridge network on each node. Each bridge network will have private IP address range.
+   - We set the IP address for te Bridge Interface
+   - TO attach a container to a network we need a virtual network cable (ip link add ....)
+   - We then attach one end to the container and other end to the bridge (ip link set ...., ip link set ......)
+   - We then assign IP address to the namespacess( ip -n <namespace> addr add ....) and add a route to the route table ( ip -n namespace route add ....)
+   - Bring up the interface (ip -n <namespace> link set ....)
+![alt text](imgs/po1.PNG "")
+- In order to reach to the IP of the pod in a different node , we need to add the route for the pod IP to the IP of the different node its trying to reach (ip route add 10.244.2.2 vai 192.168.1.12)
+- Simiarly we  need to consider for all other route, its get complicated very quickly.
+- Instead create  a external router that routes all the requests and points all the of them to use this as default gateway.
+- In order to acieve this we need to run a script everytime we create a container for that to use the default gateway, this is where CNI comes into the picture which helps  has certain standards on how we can achieve that. How the script should be configured etc.,..
+- Kubelet is responsible for creating containers on the node, it looks for the --cni-conf-dir=/etc/cni/net.d each time a container is run.
+- then the script takes care of eveything using the name and namespace id of the container
+![alt text](imgs/po2.PNG "")
+
+
+### 8.4 CNI in K8S:
+
+- Where do we specify the CNI plugin for the k8s to use?
+- CNI plugin is configured inside the kubelet service on each node  of the cluster. we can also see thos options (ps -aux | grep kubelet) on each node.
+![alt text](imgs/cni-0.PNG "")
+- If there are mutiple config files it checks in for the first one in alphabetical order.
+
+### 8.5 CNI Weave Plugin :
+
+- Its important to understand atleast network plugin, hence we look at the waeve plugin. To relate to other solutions.
+- Weaveworks deploy an Agent on each node, which communicates with the agents across the other nodes.
+- They share a topology of entire setup.
+- They can be deloyed as daemon sets on each nodes.  With a kubectl command (kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64
+| tr -d '\n')")
+
+#### IP address Mgmt:
+
+- How the BRIDGE networks within the nodes and pods are assinged a IP address?
+- CNI plugin is responsible for the assigning the IP address.
+- Easy way to do it maintain a list IP in the each pod and nodes in there,
+- CNI comes with two built in plugins which implement these plugins, DHCP and host-local plugins within it.
+- Different network providers does it differently.
+
+### 8.6 Service Networking:
+
+- PODs are rarely communicate each other directly, we always use the service.
+- Service is not bound to Node, its accessible across the cluster. This is Cluster IP.
+- If its a web application and want to access outside the outside the cluster we use NodePort which exposes the application on port 30080 on each node.
+- How services getting IP and does all other stuff ?
+![alt text](imgs/service1.PNG "")
+- Whenever we create a service it gets assigned a IP from a pre defined range.
+- Kube proxy running on each node gets these IP and creates a forwarding  rules on each node.
+- kube proxy uses different ways to enable this. (userspace, iptables,ipvs) . Default is IP table.
+   - Let us create a service CusterIP to access a pod, k8s assgins the IP address to this service from the default range the kube-api-server has for services i.e 10.0.0.0/24
+   - We need to make sure that the POD IP and Service IP ranges doesnt overlap
+![alt text](imgs/svc.PNG "")
+![alt text](imgs/svc0.PNG "")
+
+### 8.7 DNS in K8S:
+
+- DNS resolution within the cluster. K8S deploys DNS when you install it using kubeadm, if its done manually we need to set it up.
+- Whenever a service is created, K8S DNS service creates a record for DNS name for the service.
+- Fo each namespace , DNS server creates a sub-domain with the namespace name.
+- All the services are further grouped in to a sub-domain called svc.
+- All the stuff has a root domain called called cluster.local
+![alt text](imgs/dns-svc.PNG "")
+
+### 8.8 CoreDNS in K8S:
+
+- Each time a pod is created a record is created in the DNS server.
+- It also configures /etc/resolv.conf to point the nameserver to the DNS ip.
+- For POD names are done by using the IP by replacing the . with -.
+- CoreDNS is deployed in the kube-system namespace.
+- k8s plugin helps it work with coreDNS, the root domain is cluster.local in /etc/coredns/Corefile
+- this Corefile is passed into the k8s as a ConfigMap. 
+- PODS gets assigned CoreDNS server, the CoreDNS runs as a service called kube-dns on the kube-system namespace. this IP is configured in nameserver in /etc/resolv.conf in pods created. This is done automatically.
+- kubelet is resposible for the above step.
+- Even we search with the service name , it returns the output as the resolv.conf has search row which helps in fetching the output using any name.
+![alt text](imgs/dns-pod.PNG "")
+
+
+### 8.9 INGRESS:
+
+- Generally when we have a 3 tier application, web server is connected to the application server n DB server via services.
+- To access app server and DB server from within the cluster we use ClusterIP.
+- As we know services are distributed across mutiple node unlike pods, so it distributes traffic accordingly to each one of the pods across multiple nodes.
+- For the web server now to be accessed to the outside world we need to expose it , this can be done by using service NodePort. We can configure a DNS and access it via this port say 38080
+- We dont want our users to access the web page say my-online-store.com:38080 using the port number each time. So we have to setup a proxy server ahead of it which exposes port 80.
+- Instead if we use a cloud provider , it creates the Nodeport like earlier but it also sends a request to create Load Balancer (NLB in GCP, CLB in AWS by default)
+- On recieveing the request cloud provider configure a LB to route the traffic to the service ports on all the Nodes. The LB has an external IP and users access the site using the DNS attached to this IP.
+- Now the company service grows we have mutiple pages(microsites) (ex: my-online-store.com/video)
+- Dev developed the video application as completely new application as it has nothing to do with the current application, Cloud provider provisions a new LB with port 38282, But consider we have mutiple paths like /video, /games, /men, /women etc.,.. Everytime we introduce a service we need to add a new LB and proxy to route the traffic accrodingly.
+- To avoid this its better use a feature within k8s cluster that manages all the services and sits within our cluster. Thats where INGRESS comes in, It helps access mutiple URL within our cluster based on the URL path(Path Based Routing) and implement SSL security as well. Still with ingress we need expose it to the outside world as a NodePort or Cloud Load Balancer( Cloud LB is often used across these days)
+
+#### How to Configure Ingress ??
+
+- Without Ingress we  would use a reverse proxy and configure to route traffic across mutiple services , the configuration consists of URL route and SSL certificates etc.,.
+- INGRESS is implemented in the same way. Here the rever proxy server is the INGRESS CONTROLLER and the set of rules we configure are called as INGRESS RESOURCES( created ).
+- Which Ingress Controller do we need, they are number of solutions ( GCE, nginx, Istio etc.,.)
+- GCE and Nginx are supported and maintained by k8S.
+- LB part of the above Ingress controllers are a part of it, Nginx controller is deployed as any other deployment in k8s .
+![alt text](imgs/ingress.PNG "")
+- here the args are defined as the within the image ngix controller is stored in /nginx-ingress-controller
+![alt text](imgs/ingress1.PNG "")
+- We must also configure where to store erro logs, keep-alive and ssl-protocols for that we need a ConfigMap and store that in. ConfigMap at first can be empty but it must be added to make changes in the future and not worry about modifying the ngixn configuration files.
+- We must also pass two environment variables that carry the pods name and namespace this is required to read the configuration data within the pod.
+- Finally specify the ports used by the Ingress Controller (80 and 443)
+![alt text](imgs/ingress2.PNG "")
+- We now create a service to expose the  ingress controller we create a service of type NodePort.
+- Ingress have additional intelligence built in to monitor the K8S cluster for ingress resources and configure the ingress services accordingly.
+- To do that we need and service account with relavant roles and auth.
+![alt text](imgs/ingress3.PNG "")
+
+**Ingress Resources Creation**
+- Its a set of rules configured on Ingress Controller. Such as Path based routing etc.,..
+- We could route users based on Domain name as well.
+- Its created with a k8s definition file.
+![alt text](imgs/ingress4.PNG "")
+- Once the above is done the new ingress if created and route the traffic to webserver service that we are using.
+- We can set rules depending upon the kind of traffic or Domain name. Within the rules we can define paths which can be routed to particular pods.
+![alt text](imgs/ingress5.PNG "")
+
+**Configuring Ingress Resources**
+- We start by creating a similar definition file, nut now under spec we start with rules.
+![alt text](imgs/ingress5.PNG "")
+- We then configure the paths, paths is an array of multiple items. one path for each URL then we move the backend specified in the earlier Ingres file.
+- kubectl describe ingress ingress-wear-watch
+- There is something called default backend , when users hits a URL that isnt configured we migth want to show a nice message for them for that we need to default backend service.
+- We also have can configure using the different domain names as well.
+![alt text](imgs/ingress6.PNG "")
+
+## 9.0 Troubleshooting:
+
+### 9.1 Application Failures:
+
+- Consider a 3 tier application, check if the web app and app server is accessible.
+- If the CURL to web app fails to connect. Check the web app service and make sure the pod and web app service labels and selectors match.
+- Check the web pod and make sure its running. Check the events related to pod using descirbe , also check the number of restart(if its restarting frequently its an issue)
+- Check the logs why its restarting (kubectl get logs web -f ) or previous pod (kubectl get logs web -f --previous)
+- Check the status of the APP service and DB serivce as before , also pods as well.
+
+### 9.2 Control Plane Failure:
+
+- Check the status of nodes.
+- Check the status of control plane pods. (kubectl get pods -n kube-system)
+- Check the control plane components are deployed as services check the status of the services. (service kube-apiserver status)
+- Check the logs of controlplane compnents (kubectl logs kube-apisever -n kube-system)  (sudo journalctl -u kube-apiserver, if deployed as services)
+
+### 9.3 Worker Node Failures:
+-  Check the nodes status (ready or not) , then descirbe why its not ready , check for the status why there is an issue.
+- if the status is unknown , check the last heart beat time when the node might have crashed. 
+- check the top, df -h, status of the kubelet(service kubelet status, sudo journalctl -u kubelet)
+- check the kubelet certs they are not expired and part of right group and right CN.
+
+### 9.4 Networking:
+
+```
+Network Troubleshooting
+Network Plugin in kubernetes
+--------------------
+
+Kubernetes uses CNI plugins to setup network. The kubelet is responsible for executing plugins as we mention the following parameters in kubelet configuration.
+
+- cni-bin-dir:   Kubelet probes this directory for plugins on startup
+
+- network-plugin: The network plugin to use from cni-bin-dir. It must match the name reported by a plugin probed from the plugin directory.
+
+
+
+There are several plugins available and these are some.
+
+
+
+1. Weave Net:
+
+
+
+  These is the only plugin mentioned in the kubernetes documentation. To install,
+
+kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+
+
+
+You can find this in following documentation :
+
+                  https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
+
+
+
+2. Flannel :
+
+
+
+   To install,
+
+  kubectl apply -f               https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml
+
+   
+
+Note: As of now flannel does not support kubernetes network policies.
+
+
+
+3. Calico :
+
+   
+
+   To install,
+
+   curl https://docs.projectcalico.org/manifests/calico.yaml -O
+
+  Apply the manifest using the following command.
+
+      kubectl apply -f calico.yaml
+
+   Calico is said to have most advanced cni network plugin.
+
+
+
+In CKA and CKAD exam, you won't be asked to install the cni plugin. But if asked you will be provided with the exact url to install it. If not, you can install weave net from the documentation 
+
+      https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
+
+
+
+Note: If there are multiple CNI configuration files in the directory, the kubelet uses the configuration file that comes first by name in lexicographic order.
+
+
+
+
+
+DNS in Kubernetes
+-----------------
+Kubernetes uses CoreDNS. CoreDNS is a flexible, extensible DNS server that can serve as the Kubernetes cluster DNS.
+
+
+
+Memory and Pods
+
+In large scale Kubernetes clusters, CoreDNS's memory usage is predominantly affected by the number of Pods and Services in the cluster. Other factors include the size of the filled DNS answer cache, and the rate of queries received (QPS) per CoreDNS instance.
+
+
+
+Kubernetes resources for coreDNS are:   
+
+a service account named coredns,
+
+cluster-roles named coredns and kube-dns
+
+clusterrolebindings named coredns and kube-dns, 
+
+a deployment named coredns,
+
+a configmap named coredns and a
+
+service named kube-dns.
+
+
+
+While analyzing the coreDNS deployment you can see that the the Corefile plugin consists of important configuration which is defined as a configmap.
+
+
+
+Port 53 is used for for DNS resolution.
+
+
+
+    kubernetes cluster.local in-addr.arpa ip6.arpa {
+       pods insecure
+       fallthrough in-addr.arpa ip6.arpa
+       ttl 30
+    }
+
+
+This is the backend to k8s for cluster.local and reverse domains.
+
+
+
+proxy . /etc/resolv.conf
+
+
+
+Forward out of cluster domains directly to right authoritative DNS server.
+
+
+
+
+
+Troubleshooting issues related to coreDNS
+1. If you find CoreDNS pods in pending state first check network plugin is installed.
+
+2. coredns pods have CrashLoopBackOff or Error state
+
+If you have nodes that are running SELinux with an older version of Docker you might experience a scenario where the coredns pods are not starting. To solve that you can try one of the following options:
+
+a)Upgrade to a newer version of Docker.
+
+b)Disable SELinux.
+
+c)Modify the coredns deployment to set allowPrivilegeEscalation to true:
+
+
+
+kubectl -n kube-system get deployment coredns -o yaml | \
+  sed 's/allowPrivilegeEscalation: false/allowPrivilegeEscalation: true/g' | \
+  kubectl apply -f -
+d)Another cause for CoreDNS to have CrashLoopBackOff is when a CoreDNS Pod deployed in Kubernetes detects a loop.
+
+
+
+  There are many ways to work around this issue, some are listed here:
+
+
+
+Add the following to your kubelet config yaml: resolvConf: <path-to-your-real-resolv-conf-file> This flag tells kubelet to pass an alternate resolv.conf to Pods. For systems using systemd-resolved, /run/systemd/resolve/resolv.conf is typically the location of the "real" resolv.conf, although this can be different depending on your distribution.
+
+Disable the local DNS cache on host nodes, and restore /etc/resolv.conf to the original.
+
+A quick fix is to edit your Corefile, replacing forward . /etc/resolv.conf with the IP address of your upstream DNS, for example forward . 8.8.8.8. But this only fixes the issue for CoreDNS, kubelet will continue to forward the invalid resolv.conf to all default dnsPolicy Pods, leaving them unable to resolve DNS.
+
+
+
+3. If CoreDNS pods and the kube-dns service is working fine, check the kube-dns service has valid endpoints.
+
+              kubectl -n kube-system get ep kube-dns
+
+If there are no endpoints for the service, inspect the service and make sure it uses the correct selectors and ports.
+
+
+
+
+
+Kube-Proxy
+---------
+kube-proxy is a network proxy that runs on each node in the cluster. kube-proxy maintains network rules on nodes. These network rules allow network communication to the Pods from network sessions inside or outside of the cluster.
+
+
+
+In a cluster configured with kubeadm, you can find kube-proxy as a daemonset.
+
+
+
+kubeproxy is responsible for watching services and endpoint associated with each service. When the client is going to connect to the service using the virtual IP the kubeproxy is responsible for sending traffic to actual pods.
+
+
+
+If you run a kubectl describe ds kube-proxy -n kube-system you can see that the kube-proxy binary runs with following command inside the kube-proxy container.
+
+
+
+    Command:
+      /usr/local/bin/kube-proxy
+      --config=/var/lib/kube-proxy/config.conf
+      --hostname-override=$(NODE_NAME)
+ 
+
+    So it fetches the configuration from a configuration file ie, /var/lib/kube-proxy/config.conf and we can override the hostname with the node name of at which the pod is running.
+
+ 
+
+  In the config file we define the clusterCIDR, kubeproxy mode, ipvs, iptables, bindaddress, kube-config etc.
+
+ 
+
+Troubleshooting issues related to kube-proxy
+1. Check kube-proxy pod in the kube-system namespace is running.
+
+2. Check kube-proxy logs.
+
+3. Check configmap is correctly defined and the config file for running kube-proxy binary is correct.
+
+4. kube-config is defined in the config map.
+
+5. check kube-proxy is running inside the container
+
+# netstat -plan | grep kube-proxy
+tcp        0      0 0.0.0.0:30081           0.0.0.0:*               LISTEN      1/kube-proxy
+tcp        0      0 127.0.0.1:10249         0.0.0.0:*               LISTEN      1/kube-proxy
+tcp        0      0 172.17.0.12:33706       172.17.0.12:6443        ESTABLISHED 1/kube-proxy
+tcp6       0      0 :::10256                :::*                    LISTEN      1/kube-proxy
+
+
+```
+
+- References:
+
+- Debug Service issues:
+
+                     https://kubernetes.io/docs/tasks/debug-application-cluster/debug-service/
+
+- DNS Troubleshooting:
+
+                     https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/
+
+
+
+## 10.0 Installation of K8S:
+
+- First before designinig a K8S cluster we need to ASK for the requirements.
+- Main Objectives:
+   1. Node Considerations
+   2. Resource Considerations
+   3. Network Considerations.
+- To know the objectives we need to ask for the relavant list of questions like below.
+   1. Purpose ?
+      - Education  (Minikube, Single node Cluster with kubeadm/GCP/AWS for our learning purposes)
+      - Development & Testing ( Multi node clusters with GCP/AWS/Kubeadm with single master & mutiple workers)
+      - Hosting Prod Applications.  
+            - Multi node cluster with more than one master node and multiple worker nodes.
+            - kubeadm/GCP/AWS/AKS
+            - Limit is 5000 nodes : 150,000 PODS : 300,000 containers and upto 100 PODs per node. Depending upon the number of nodes AWS/GCP if we use self managed  worker nodes or cloud manged nodes.
+            - Kops is nice tool to depoy on AWS. On-Prem use kubeadm. 
+   2. Cloud or On-Prem
+      -  On-Prem/AWS/AKS/GKE.
+      - On local Linux machine we can setup cluster by downlaading the binaries and running them , its very hard this approach.
+      - We can use tools like kubeadm /minikube
+   3. Workloads?
+      - How Many?
+      - What kind?
+         - web
+         - Big Data/AI/ML
+      - Application Resource Req
+         - CPU Intensive
+         - Memory Intensive
+      - Traffic
+         - Heavy Traffic
+         - Burst Traffic
+- once we get to know the answers, we can decide on the type of resources we can configure.
+   ![alt text](imgs/adm.PNG "")
+   ![alt text](imgs/adm0.PNG "")
+   ![alt text](imgs/adm1.PNG "")
+
+- **High Availablity:** 
+   - Mutiple masters to avoid single point of failure, Cloud providers take care of these ofor us.
+   - When we have mutiple masters its better to use LB to split the traffci to the Kube-apiserver.
+   - Controller and Schduler is mantained using active and standby ones. This is done using the leader elect process, its same for scheduler.
+   - ETCD we maintain couple of servers for ETCD, one active and other standby. we can maintain them inside the master node or seperately. Kube-apiserver is the only one talking to the ETCD.
+   - ETCD runs on port 2379.  We write to any instance and replicated on other ETCD server. The read can be one using the anyone of them.
+
+
+
+
+
+
+## 11.0 YAML and JSON Path:
+
+### YAML:
+
+- All anisble playbooks and K8S manifest files are written in YAML.
+![alt text](imgs/yaml.PNG "")
+- Key/Value pairs are seperated by colon.
+- Arrays are represented by - in front.
+- Dictonary are grouped together under an item.
+![alt text](imgs/yaml2.PNG "")
+- Make sure we have equal number of blank spaces across.
+
+![alt text](imgs/yaml1.PNG "")
+
+### JSON:
+
+- JSON and YAML represent same data. JSON uses {} , whereas YAML uses intendation.
+- YAML we use - to represent a list, in JSON we use the [] , seperated by comma.
+- All programming languages have support for reading both the types.
+**JSON PATH**: (Json query language)
+   - Similar to SQL we can query and fetch the data. Its a query language.
+   - JSON data always starts with { and ends with }  all the values are encapsulated within the dictionary, the top level dictionary is known as root element denoted by $
+   - JSON path results are encapsulated within a array, when u run a query the output comes within the []
+    ![alt text](imgs/json.PNG "")
+   - JSON PATH query for lists is a bit different, its fetched using the [0] the number varies as per the element you want to fetch in the list. (check the below image) Here the root element is denoted by $ as well if the entire JSON is encapsulated within a list.
+    ![alt text](imgs/json1.PNG "")  
+   - Consider we have a list numbers , what if I want a list of numbers greater than 40. Check below.
+   ![alt text](imgs/json2.PNG "")
+   ![alt text](imgs/json3.PNG "")
+
+**JSON PATH (Wild Cards)**:
+   - Refer the image below. In a dict we have car and bus , how do we retrieve all the colors present in these dict.
+   - We can replace car or bus with any * is the wild card that we need to replace
+    ![alt text](imgs/json4.PNG "")
+
+**JSON PATH (Lists)**:
+   - How to fetch items in the list , this is similar to indexing in the python programming language.
+     ![alt text](imgs/json5.PNG "")
+
+
+## ?.0 JSON PATH in K8S:
+
+- When working on production grade k8s, we will have 100 of nodes and 1000 of pods, deployments and replicasets. 
+- We often have requirements to query data of specific feilds and criteria amongst these pods is an overwhemling tasks.
+- kubectl supports a JSON path option that makes filtering data across large data sets make it easy.
+- Every time we use a kubectl command it sends the request to the kube-apiserver and the server send the information in JSON format
+- The information that the kubectl shows is often less so that it is easily readable, we can read additional infromation using "-o wide" option.
+- Suppose if I want information about the node and number of CPU they use? none of the kubectl commands provide me with that information. That is where JSON is useful.
+- The below steps is required to be followed to get the ouput:
+   1. Identify the kubectl command (ex: kubectl get pod)
+   2. Familarize with the JSON format (ex: kubectl get pdod -o json)
+   3. Form the JSON path query (ex: .items[0].spec.containers[0].image) Note: here $ isnt mandatory for the root as the K8S adds it automatically.
+   4. use the JSON PATH query with the kubectl command. (ex: kubectl get pod -o=jsonpath='{.items[0].spec.containers[0].image}')
+
+   ![alt text](imgs/json6.PNG "")
+- We can also merge the jsonpath logic to get both the outputs and we can use loops to get the output in the desired format.
+![alt text](imgs/json7.PNG "")
+- Merge the above image logic into a single line to get the output.
+- There is an another approach as well we can use the custom coloumns option as well.  (ex: kubectl get nodes -o=custom-coloumns=<coloumn name>:<JSON PATH>)
+- In the below example we dont use items in the customs-coloumns as it automatically considers the all the items in the dictonary so no need to mention that. Cehck below image
+![alt text](imgs/json8.PNG "")
+- We can sort the kubectl using the --sort-by command (kubectl get node --sort-by=.metdata.name)
+
+```
+To get the restart count of the redis-container  as we dont know the order every time.
+$.status.containerStatuses[?(@.name == 'redis-container')].restartCount
+
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "name": "nginx-pod",
+    "namespace": "default"
+  },
+  "spec": {
+    "containers": [
+      {
+        "image": "nginx:alpine",
+        "name": "nginx"
+      },
+      {
+        "image": "redis:alpine",
+        "name": "redis-container"
+      }
+    ],
+    "nodeName": "node01"
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2019-06-13T05:34:09Z",
+        "status": "True",
+        "type": "Initialized"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2019-06-13T05:34:09Z",
+        "status": "True",
+        "type": "PodScheduled"
+      }
+    ],
+    "containerStatuses": [
+      {
+        "image": "nginx:alpine",
+        "name": "nginx",
+        "ready": false,
+        "restartCount": 4,
+        "state": {
+          "waiting": {
+            "reason": "ContainerCreating"
+          }
+        }
+      },
+      {
+        "image": "redis:alpine",
+        "name": "redis-container",
+        "ready": false,
+        "restartCount": 2,
+        "state": {
+          "waiting": {
+            "reason": "ContainerCreating"
+          }
+        }
+      }
+
+
+```
+
+## 
