@@ -503,10 +503,11 @@ The kubelet automatically tries to create a mirror Pod on the Kubernetes API ser
 - When you create a deployment it triggers a rollout which creates a new revision. ex: first one revision 1
 - When the container version is upgraded a new deployment is created with revision 2. 
 - Run the below command to check the rollout status (kubectl rollout status deployment/myapp-deployment)
-- We can also check the history of rollouts(kubectl rollout histiry deployment-name)
+- We can also check the history of rollouts(kubectl rollout history deployment deployment-name)
 - There are two kinds of deployment strategies:
    - Recreate: Destroy the running containers and create the new ones. Application will have some downtime. this strategy is recreate  strategy
    - Rolling Update: it is the default deployment strategy. it takes container down at a time and updates the same. Almost everyone follows this strategy.
+                     (kubectl set image deployment/nginx-deploy nginx=nginx:1.17)   nginx=image_name, nginx:1.17 image_id
 ![alt text](imgs/deploy.PNG "")
 - How the upgrade works under the hood?
    When you run a new deployment the k8s creates a  new replica set and deploys the new containers , same time taking down the containers in the old replicaset. one by one.
