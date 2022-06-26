@@ -31,7 +31,7 @@
         - from network to physical layer happens outisde the own network.
 
 ### OSI model 
-![alt text](imgs/OSI.png "")
+![alt text](imgs/OSI.PNG "")
 
 - Application Layer: 
     - Users interact within this layer. ( browsers) 
@@ -62,7 +62,7 @@
     - it contains the hardware trasmits the frames as bits via electric signals. it converts the data from electric signals to bits. and pass on to the data link layer as frame on the recievers end.
     
 ### TCP/IP (transport control protocol):
-![alt text](imgs/tcp.png "")
+![alt text](imgs/tcp.PNG "")
 
 - Here the application, presentation and transport model and combined into one. 
 - Client - Server architecture. 
@@ -198,7 +198,7 @@ Next time you request the same site this cookie is sent in the header and server
 ## NAT address translation:
 
 - It modifies the public to the private IP within our network.
-![alt text](imgs/nat.png "")
+![alt text](imgs/nat.PNG "")
 -
 
 ## DATA Link Layer:
