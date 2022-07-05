@@ -229,3 +229,32 @@ Network ACL rule only allow CIDR as destination.
 
 ```
 ![alt text](imgs/aws33.PNG "")
+
+## AWS Public and Private Services:
+
+- Services that exsist within the VPC are private services. and services that exsist ooutside the VPC are private services.
+- Private services can have public IP if they are in the public subnets .
+- Public services have public IP addresses or endpoints.
+- If private EC2 instance wants to connect to the public service s3 privately we need to use the VPC Endpoint.
+
+![alt text](imgs/aws37.PNG "")
+
+
+# AWS EC2:
+
+- EC2 are VM or Virtual server that are launched on the Physical Servers managed by AWS. 
+
+# AWS STORAGE SERVICES:
+
+# AWS DB:
+
+# AWS Automation:
+
+# DevOps on AWS - creating a Code Pipeline:
+
+# DNS Services and Content Delivery:
+
+# Containers and Serverless Computing:
+
+# Application Integration and Loose Coupling:
+
