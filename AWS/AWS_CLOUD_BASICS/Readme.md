@@ -243,8 +243,59 @@ Network ACL rule only allow CIDR as destination.
 # AWS EC2:
 
 - EC2 are VM or Virtual server that are launched on the Physical Servers managed by AWS. 
+- We can choose from mutiple flavours of OS from the offerings.
+- the EC2 can send traffic from the public subnet to the  internet via IGW.
+- If the EC2 is in private subnet it must send traffic from t private subnet to the NAT gateway in the public subnet and it has access to the IGW.
+![alt text](imgs/aws39.PNG "")
+![alt text](imgs/aws40.PNG "")
+
+## Launching an EC2 instance:
+
+- We can launch an EC2 instance from the mutiple AMI which are available within the AWS.
+- We can connect to the instance using the command (ssh -i "solr-ai-ohio.pem" ec2-user@ec2-3-12-43-171.us-east-2.compute.amazonaws.com)
+- We can append the user data while starting the instance something like this.
+
+```
+#!/bin/bash
+yum update -y
+sudo yum install httpd -y
+sudo systemctl start httpd
+sudo systemctl enable httpd
+cd /var/www/html
+echo "hellow world from $(hostname -f)" > index.html
+
+```
+- In the SG add inbound rules to allow port 80 and 443.
+- We can use the access keys to check the instance details, storage details and many more storage information from the CLI.
+- **Using IAM Role with the EC2 Instance**:
+    - Suppose you want to access the S3 bcuket using the EC2 instance. We can create an IAM role that gets assumed by the EC2 instance while acccessing the content in the S3 bucket.
+    - the way we can achieve this is by using the IAM Roles
+    - we can a role from the exsisting policies or new pilicy using json file.
+    ![alt text](imgs/aws38.PNG "")
+    - Go to Instance Settings > Attach/Replace an IAM role > attach the read only s3 role.
+    - this is the ideal way to give access to the services in aws to perform a certain role.
+- **Auto Scaling Group**:
+    - It automatically launches new instances when the min no.0f instances are not present or if the exsisiing new instances are more than 90% of their capacity.
+    - We can put input of these parameters using the CloudWatch metrics.
+    - This is very useful for making ou applocation scalable.
+    ![alt text](imgs/aws41.PNG "")
+
+    - Go to AGS in ec2 dashboard > create launch template > create ASG (within the ASG we have the Launch configuration what to do on what request.)
+
+- **Create a Target Tracking Policy**:
+    - Create a scaling policy in the ASG if the load increases more than 80%.
+
+- **ELB**:
+    - We have 3 LB CLB, ALB, NLB all are automatically scalable.
+    - we can use a ALB to direct traffic to mutiple instances in the subnets.
+    - EC2 Dashboard  > Create LB > ALB  > create TARGET Group and register them to the ALB. (Within the ALB we have TARGET GROUPS as in where to redirect the load balanced traffic)
+    - Now go to ASG and enable LB and select the relavant TG.
+
+    ![alt text](imgs/aws42.PNG "")
 
 # AWS STORAGE SERVICES:
+
+- There are 3 types of storages Block, File and Object we have various services providing these strorage options in AWS.
 
 # AWS DB:
 
