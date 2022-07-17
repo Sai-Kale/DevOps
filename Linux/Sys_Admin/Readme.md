@@ -31,3 +31,7 @@
 - command to add a user to a exsisting group and shell etc,.. **useradd -G superheros  -s bin/bash -c "Ironman charater" -m -d /home/ironman ironma**
 - to check if its created **id ironman**
 - to create a psswd **passwd ironman**
+
+### Password Aging:
+
+- 
