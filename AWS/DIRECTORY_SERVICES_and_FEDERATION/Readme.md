@@ -43,7 +43,7 @@
     - supports IdP like fb, google, apple
     - Supports IdP using SAML 2.0
 
-### IAM Identity Federation:
+### AWS IAM Identity Fed:
 
 - We have a corporate AD and IdP on-prem. once the user is authenticated on-prem.
 - after the authentication client will call sts:AssumeRole with SAML API action, ten client will ave acces to the resources within aws
