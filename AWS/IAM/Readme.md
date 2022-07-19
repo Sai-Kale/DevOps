@@ -33,9 +33,12 @@
 ### Roles:
 
 - A role is an IAM identity that has specific permissions.
+- It is like an IAM user in terms of functionality.
+-**We cant attach IAM Role to a user or group. They can just assume them**
+- https://aws.amazon.com/iam/faqs/ 
 - Roles are assumed by users, application and services.
 - we gain short term acces using sts:AssumeRole to gain access to the resources.
-
+https://aws.amazon.com/premiumsupport/knowledge-center/iam-assume-role-cli/#:~:text=Create%20the%20IAM%20role%20and%20attach%20the%20policy&text=Because%20this%20IAM%20role%20is,account%20to%20assume%20that%20role.
 ![alt text](imgs/iam7.PNG "")
 
 ### Policies:
