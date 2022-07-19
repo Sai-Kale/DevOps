@@ -35,10 +35,16 @@
 - A role is an IAM identity that has specific permissions.
 - It is like an IAM user in terms of functionality.
 -**We cant attach IAM Role to a user or group. They can just assume them**
+- If any user or group want to assume a role that cannot be limited to that particular user or group while creating the role it will be given to entire users in the account. 
 - https://aws.amazon.com/iam/faqs/ 
 - Roles are assumed by users, application and services.
 - we gain short term acces using sts:AssumeRole to gain access to the resources.
 https://aws.amazon.com/premiumsupport/knowledge-center/iam-assume-role-cli/#:~:text=Create%20the%20IAM%20role%20and%20attach%20the%20policy&text=Because%20this%20IAM%20role%20is,account%20to%20assume%20that%20role.
+```
+Role is a group of policies tied together and linked to a specific entity (AWS service, AWS account or web identities) and not for IAM User or Group.
+IAM User/Group is sort of a role if you think about it, because it has a list of policies attached to it that a developer logged in with the specified credentials may use.
+Also, if you try to play with the AWS Console a little you'll find that you cannot attach Roles to Users and Groups, only Policies.
+```
 ![alt text](imgs/iam7.PNG "")
 
 ### Policies:
