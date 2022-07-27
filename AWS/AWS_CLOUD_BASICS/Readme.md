@@ -297,6 +297,7 @@ echo "hellow world from $(hostname -f)" > index.html
 
 - There are 3 types of storages Block, File and Object we have various services providing these strorage options in AWS.
 
+
 # AWS DB:
 
 # AWS Automation:
