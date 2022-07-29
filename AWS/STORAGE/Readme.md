@@ -103,6 +103,11 @@
 
 ![alt text](imgs/st15.PNG "")
 
+- There are two more addition to the storage classes S3 glacier instant retrival and S3 glacier fleixble retrival.
+
+![alt text](imgs/s3_storage.PNG "")
+
+
 ### S3 Lifecycle Policies:
 
 - We have two different type of actions in Lifecycle Policies.
