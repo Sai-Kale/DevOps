@@ -255,7 +255,7 @@ I will do some more research and if I find anything, will let you know
 ![alt text](imgs/ec40.PNG "")
 ![alt text](imgs/ec41.PNG "")
 ![alt text](imgs/ec42.PNG "")
-![alt text](imgs/ec43.PNG "")
+![alt text](imgs/ec43.PNG ""
 
 
 ###### LABS:
