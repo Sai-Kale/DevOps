@@ -41,3 +41,17 @@
 
 - It can have a public IP but generally its internal and we dont assign a public IP.
 - Encryption at rest and transit. Can be enabled only when creation.
+- We can have SG for RDS instance and allow traffic only from App server on port 3306
+- We have SSL to add encryption in transit.(AES 256)
+![alt text](imgs/db6.PNG "")
+
+
+![alt text](imgs/db7.PNG "")
+![alt text](imgs/db8.PNG "")
+![alt text](imgs/db9.PNG "")
+
+
+## AWS Aurora DB:
+
+-  Its AWS Properity DB.
+- Core Features of Aurora.
