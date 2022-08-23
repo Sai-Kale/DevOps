@@ -1,15 +1,15 @@
-![alt text](imgs/ci_cd.png "")
+![alt text](imgs/ci_cd.PNG "")
 
 # DOCKER:
 
-![alt text](imgs/docker1.png "")
+![alt text](imgs/docker1.PNG "")
 
 - Docker uses a client-server architecture. Client is nothing but where we install the docker application. This becomes the docker host.
 - docker build will convert the file into an image
 - docker pull will pull the image from the registry
 - docker run will run the image as a container.
 
-![alt text](imgs/docker2.png "")
+![alt text](imgs/docker2.PNG "")
 
 - Docker image is a read only, inert template comes with the instructions for deploying containers.
 - Docker image consists of collection of files (layers) that pack together all necessities - such as dependncies, source code and related libs.
@@ -17,7 +17,7 @@
 
 - Dockerfile has (mutiple layers) set of commands do a certain task.
 
-![alt text](imgs/docker3.png "")
+![alt text](imgs/docker3.PNG "")
 
 ```
 FROM ubuntu:12.04   (base image and we can't have more than two from in a dockerfile; )
@@ -51,7 +51,7 @@ CMD echo "hello from docker python"
 
 ```
 
-![alt text](imgs/docker4.png "")
+![alt text](imgs/docker4.PNG "")
 
 - docker run -it -name c1 -d -p 82:80 ubuntu
 (it mean interactive mode, name given to the container, d is detached runs in background, p is port mapping for docker application to the host port)
@@ -72,7 +72,7 @@ CMD echo "hello from docker python"
 
 ## Container States:
 
-![alt text](imgs/docker5.png "")
+![alt text](imgs/docker5.PNG "")
 
 - there are 5 states created, running,  restarting, exited , pause.
 - create state containers are created by not started or consumed any cpu
@@ -81,7 +81,7 @@ CMD echo "hello from docker python"
 
 ## Docker Networking: 
 
-![alt text](imgs/docker6.png "")
+![alt text](imgs/docker6.PNG "")
 
 - Bridge : The default network driver. Bridge networks apply to the containers running on same docker daemon host.
 - Host: For standalone containers, remove network isolation and use host's networking directly.
