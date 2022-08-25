@@ -75,7 +75,7 @@
 
 ## Elastic Bean Stalk:
 
-- Its basically acts a Platform as a service offering.
+- Its basically acts a Platform as a serv
 - EBS is a solution that provides fully managed solution for WEB Applications.
 - We can create a complete solution within the network.
 ![alt text](imgs/c17.PNG "")
