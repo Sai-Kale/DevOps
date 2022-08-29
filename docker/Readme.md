@@ -1,6 +1,6 @@
 ![alt text](imgs/ci_cd.PNG "")
 
-# DOCKER:
+# DOCKER_BASICS:
 
 ![alt text](imgs/docker1.PNG "")
 
