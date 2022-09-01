@@ -1,6 +1,6 @@
 ## CI/CD:
 
-![alt text](imgs/j1.png "")
+![alt text](../imgs/j1.png "")
 
 
 1. Build Tool (maven):
@@ -10,7 +10,7 @@
     - https://maven.apache.org/install.html
     - https://maven.apache.org/download.cgi
 
-![alt text](imgs/maven1.png "")
+![alt text](../imgs/maven1.png "")
 
 - sample spring boot code:
     - https://github.com/Sai-Kale/springboot-hello.git  (sringboot_hello)
@@ -19,7 +19,7 @@
 
 2. Sonarqube (Build, Code Quality & Analysis Tool):
 
-![alt text](imgs/sonar.png "")
+![alt text](../imgs/sonar.png "")
 - Install Sonarqube:
     - we need atleast 3 GB of ram (t3.medium)
     - docker run -d --name sonarqube -p 9000:9000 <image_name>
@@ -63,7 +63,7 @@
 
 4. **Integration with Jenkins**
 
-![alt text](imgs/jenkins.png "")
+![alt text](../imgs/jenkins.png "")
 ```
 $ sudo mkdir -p /var/jenkins_home
 
@@ -85,7 +85,7 @@ $ docker run -p 8080:8080 -p 50000:50000 -v /var/jenkins_home:/var/jenkins_home 
 
 - Build docker images and push to AWS ECR.
 
-![alt text](imgs/jenkins1.png "")
+![alt text](../imgs/jenkins1.png "")
 
 - create  a java server along with maven and integrate sonar.
 - git clone https://github.com/Sai-Kale/springboot-maven-micro
