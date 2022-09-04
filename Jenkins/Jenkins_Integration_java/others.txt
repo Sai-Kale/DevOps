@@ -1,0 +1,21 @@
+sudo mkdir -p /var/jenkins_home
+
+sudo chown -R 1000:1000 /var/jenkins_home/
+
+docker run -p 8080:8080 -p 50000:50000 -v /var/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock -v $(which docker):/usr/bin/docker --name jenkins -d jenkins/jenkins:lts
+
+
+
+User data script:
+#!/bin/bash
+sudo yum update -y
+sudo yum install docker -y
+sudo usermod -a -G docker ec2-user
+id ec2-user
+newgrp docker
+sudo systemctl enable docker.service
+sudo systemctl start docker.service
+
+
+
+docker inside docker : https://medium.com/@schogini/running-docker-inside-and-outside-of-a-jenkins-container-along-with-docker-compose-a-tiny-c908c21557aa
