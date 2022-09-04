@@ -212,6 +212,9 @@ pipeline {
 
 6. **CD using Ansible:**
 
-- 
+- Create  a new CD server.
+- Install Ansible on Jenkins server / Jenkins Container.
+- Once the ansible Is installed on Jenkins Docker Container. Change the Inventory file and /etc/ansible/hosts
+
 
 
