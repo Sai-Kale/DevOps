@@ -215,6 +215,76 @@ pipeline {
 - Create  a new CD server.
 - Install Ansible on Jenkins server / Jenkins Container.
 - Once the ansible Is installed on Jenkins Docker Container. Change the Inventory file and /etc/ansible/hosts
+- setup password less authentication from jenkins to the ansible server.
+    - ssh-keygen
+    - copy the id_rsa.pub and save it in the authorized_keys under .ssh in the CD server.
+- now run ansible -m ping dev-servers. Once success we are good
+- Install required packages on CD server (python, docker)
+- Now create a playbook to establish a connection frm CD sever to AWS ECR. and run the docker image.
 
+    - open a yaml file and write a playbook.
+    ```
+    - hosts: dev-servers
+      tasks:
+       - name: establish a connection to ECR
+         shell: enter the authentication command from the AWS ECR
+       - name: pull the image from ECR to CD server
+         shell: docekr pull repo_name
+       - name: Run the container using the docker iamge
+         shell: docker run --name=springbootcontainer -p 8080:8080  -d image_name
+    ```     
+- anisble-playbook cd.yml (check if we are able to authenticate)
+- try and access the spring boot application and verify if its up and running and we are good to go.
+
+
+
+### Jenkins Master & Slave :
+
+- Jenkins slave is can be configure to be available all the time or dynamically.
+- Slaves are used t distribute the workload on the jenkins main build server.
+- Its also sometimes required the build to happen on a different server OS to accurately generate the test reports.
+![alt text](../imgs/jenkins_slave.png "")
+![alt text](../imgs/jenkins_slave1.png "")
+![alt text](../imgs/jenkins_slave3.png "")
+
+
+
+- Installing Jenkins Master Server in AWS Environment.
+    - Create an EC2 instance and run jenkins.
+    - Create new server for it to work as a slave machine and isntall java,git,maven etc on it.
+        - got to manage nodes and clouds
+            - new node > slave1
+            - number of executors(how many jobs cna be run concurrently) > 5
+            - root directory > /root/slave1/ (we need to create on slave machine)
+            - Labels > slave1 (this is used to indentify by the pipeline and connect to this machine, this should be unique)
+            - Usage > use this node as much as possible
+            - Launch method (what method master connects to the slave) > launch agents via SSH (mostly companies use this)
+            - Host > IP address
+            - Global Credentials (type: username and passwd) 
+            - username and password (mention the name: root and passwd for the root). /etc/ssh/ssd_config (enable password authentication)
+            -  availability (keep this agent online as much as possible) and save.
+- Create a freestyle job.
+    - check if the build is happening on slave machine,
+    - restrict where this project can be run (slave1)
+    - run the job and check if its working.
+- create a pipeline project for slave   
+    - pipeline {
+        agent {
+            label 'slave1'
+        }
+        stages {
+            stage('checkout the code') {
+                steps {
+                    git 'main branch checkout'
+                }
+            }
+        }
+    }
+    - in global tools configuration provide the path of the git,maven if it doesnt work.
+- Earlier we connected to slave machine via Username and Passwd but the ideal way is to use SSH connection.
+    - enter the private key in the connection type as SSH
+    - and in the slave make sure we add the slave public key in the authorized_keys
+    - Install java on slave as well.
+- Spring boot application to test out the changes.
 
 
