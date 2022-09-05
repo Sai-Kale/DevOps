@@ -1,6 +1,6 @@
-# Jenkins
+# Jenkins Declarative Pipeline
 
 ## Introduction:
 
-- Jenkins is CI/CD tool.
+
 

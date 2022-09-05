@@ -167,9 +167,13 @@ pipeline {
     - script : The script step takes a block of Scripted Pipeline and executes that in the Declarative Pipeline. (https://www.jenkins.io/doc/book/pipeline/syntax/#script)
     - Now we need to configure a webhook with the sonarqube server. If its success or failure Jenkins will get to know from the sonarqube webhook.
         - GO to Administration in sonar qube
-        - webhooks (jenkins sonar webhook, in the URL jenkins_ip/sonaqube-webhook/) and create.
+        - webhooks (jenkins sonar webhook, in the URL jenkins_ip/sonaqube-webhook/) and create. 
 
+- Installing docker inside docker : 
+    - sudo chmod 777 /var/run/docker.sock
+    - https://medium.com/@schogini/running-docker-inside-and-outside-of-a-jenkins-container-along-with-docker-compose-a-tiny-c908c21557aa
 - Adding steps to build the docker image and store it in the registry,
+
     ```
         environment {
         registry = '719218709170.dkr.ecr.ap-south-1.amazonaws.com/hellodatarepo'
@@ -215,16 +219,24 @@ pipeline {
 6. **CD using Ansible:**
 
 - Create  a new CD server.
-- Install Ansible on Jenkins server / Jenkins Container.
-- Once the ansible Is installed on Jenkins Docker Container. Change the Inventory file and /etc/ansible/hosts
 - setup password less authentication from jenkins to the ansible server.
     - ssh-keygen
     - copy the id_rsa.pub and save it in the authorized_keys under .ssh in the CD server.
+- Install Ansible on Jenkins server / Jenkins Container.
+- Once the ansible Is installed on Jenkins Docker Container. Change the Inventory file and /etc/ansible/hosts
+    - give chmod 777 /etc/ansible/hosts
+    - mention the user for which the ansible will ssh.
+    ```
+    [dev-servers]
+    18.183.244.72  ansible_ssh_user=ec2-user
+    ```
+
 - now run ansible -m ping dev-servers. Once success we are good
 - Install required packages on CD server (python, docker)
 - Now create a playbook to establish a connection frm CD sever to AWS ECR. and run the docker image.
 
     - open a yaml file and write a playbook.
+    - mention the tag if it doesnt fetch automatically
     ```
     - hosts: dev-servers
       tasks:
@@ -237,7 +249,7 @@ pipeline {
     ```     
 - anisble-playbook cd.yml (check if we are able to authenticate)
 - try and access the spring boot application and verify if its up and running and we are good to go.
-
+    (http://18.183.244.72:8080/course-svc/getAllDevopsTools)
 
 
 ### Jenkins Master & Slave :
