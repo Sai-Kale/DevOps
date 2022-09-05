@@ -166,6 +166,8 @@ pipeline {
     ```
     - script : The script step takes a block of Scripted Pipeline and executes that in the Declarative Pipeline. (https://www.jenkins.io/doc/book/pipeline/syntax/#script)
     - Now we need to configure a webhook with the sonarqube server. If its success or failure Jenkins will get to know from the sonarqube webhook.
+        - GO to Administration in sonar qube
+        - webhooks (jenkins sonar webhook, in the URL jenkins_ip/sonaqube-webhook/) and create.
 
 - Adding steps to build the docker image and store it in the registry,
     ```
