@@ -1,3 +1,7 @@
+# GENERIC K8S ISSUES
+
+- https://k8s-issues.purutuladhar.com/
+
 # K8s Real Time Issues and Debugging:
 
 ## CrashloopBackoff:
