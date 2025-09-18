@@ -69,3 +69,25 @@
        Parallelism to collect metric sooner
        Horizontal scaling for high availability
        Distributed cache to achieve data consistency
+
+
+
+You deploy on Friday afternoon and traffic drops 30% with no error alerts. Your CEO is asking questions. What’s your investigation process?
+
+👉 Design a backup strategy for a distributed database that processes 50TB daily while maintaining ACID compliance across regions
+
+👉 Your entire CI/CD pipeline was compromised and malicious code reached production. Walk through your containment and recovery plan
+
+👉 Implement a deployment freeze process that can halt 200+ simultaneous deployments across teams within 60 seconds
+
+👉 Design a resource allocation strategy where dev environments cost 80% less than production but maintain realistic testing conditions
+
+👉 Your observability costs are 40% of your infrastructure budget. How do you optimize without losing critical visibility?
+
+👉 Create a disaster recovery test that validates your 4-hour RTO without impacting live traffic or customer data
+
+👉 Design a multi-tenant Kubernetes architecture where one tenant’s resource spike can’t impact others
+
+👉 Your database replica lag hits 10 minutes during peak hours. How do you solve this without affecting write performance?
+
+👉 Implement automated compliance scanning that prevents policy violations while maintaining developer velocity
