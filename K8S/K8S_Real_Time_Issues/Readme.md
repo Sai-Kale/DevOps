@@ -164,3 +164,18 @@ Here are 17 Kubernetes questions I was asked that dive into architecture, troubl
 16. You're managing multi-region deployments using a single Kubernetes control plane. What architectural considerations must you address to avoid cross-region latency and single points of failure?
 
 17. During peak traffic, your ingress controller fails to route requests efficiently. How would you diagnose and scale ingress resources effectively under heavy load?
+
+
+###########################################
+
+) can you walk me through the Deployment process ?
+5) How do you Integrate ArgoCD for the deployment ?
+6) Once the CI build is done, you push the Image to ECR. In order to done the deployment using ArgoCD. what Configurations you have configured on the top of ArgoCD & how did you do? 
+7) How does ArgoCD Connected to the kubernetes cluster & how does into the deployment ?
+8) we have Argocd right, we have ECR Right whenever you push the Image to Eck, How does ArgoCD will notify, How does ArgoCD gets to know. there is a Image change & how does ArgoCD gets to
+gets to know. It needs to deploy on the top of which tubernetes?
+9) How does ArgoCD get to know there is
+an Image change, there is a new Image in ECR, how do you Integrate these two?
+10) when you open the Argoco dashboard
+what do you have?
+11) what we call kubernetes cluster in Argocd ?
