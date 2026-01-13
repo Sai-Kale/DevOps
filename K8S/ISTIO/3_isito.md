@@ -6,6 +6,15 @@
 <img width="1298" height="703" alt="image" src="https://github.com/user-attachments/assets/404b7f49-af2b-4bd0-b79a-a6229a8a9ae3" />
 <img width="1265" height="747" alt="image" src="https://github.com/user-attachments/assets/61f56eef-42ab-4785-8011-ac88c233dc91" />
 
+- IsitoD provides Service Discovery, Routing Rules , Certificate Authority , Authoriazation and Authentication
+- Why Istio ?
+-   TRAFFIC MGMT , SECURITY(mTLS), Policies ( Access Control), Observability ( Centralized Logging ex: Jagger ), Reisilence and Reliability.
+
+<img width="1285" height="456" alt="image" src="https://github.com/user-attachments/assets/28b362cb-c903-41f3-bc93-05ccb0b3e0c9" />
+
+<img width="1350" height="486" alt="image" src="https://github.com/user-attachments/assets/2d3a83ac-d812-47ab-a61c-5765f6b7106d" />
+
+
 
 
 
