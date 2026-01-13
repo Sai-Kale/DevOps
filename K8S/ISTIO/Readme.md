@@ -212,12 +212,5 @@ Service mesh automatically:
 
 ---
 
-If you want next, I can explain:
 
-* 🔹 **Sidecar proxy in 2 minutes**
-* 🔹 **Istio vs Linkerd**
-* 🔹 **Do you really need service mesh?**
-* 🔹 **Service mesh vs API gateway**
-
-Just tell me 👍
  
