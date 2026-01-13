@@ -1,6 +1,16 @@
-Perfect — now let’s **evolve the same classroom & book-passing story** and explain **Istio Ambient Mode** in a way that makes the *why* and *how* very clear.
+# ISTIO AMBIENT MODE ( NO SIDECARS):
+<img width="1257" height="732" alt="image" src="https://github.com/user-attachments/assets/b2d7e872-4b33-4913-9ebf-366897ae537a" />
 
----
+<img width="1011" height="680" alt="image" src="https://github.com/user-attachments/assets/21727743-45d3-427f-aa4a-0ed6b6d4dcbe" />
+
+<img width="1020" height="658" alt="image" src="https://github.com/user-attachments/assets/ad96a29a-0fb5-4ead-ad52-d1b247be55ed" />
+
+- AMBIENT MODE REQUIRES Gateway API which is a replacement for the the Ingress Controller.
+- WAYPOINT PROXIES are Pod not side car proxies.
+  
+<img width="1402" height="753" alt="image" src="https://github.com/user-attachments/assets/4ec81640-cbad-4fc3-be94-564586e9d800" />
+
+- The ISTIO ambient mode is enabled only when the namespace is lablled as AMBIENT. 
 
 ## 🧠 One-line definition (pin this)
 
