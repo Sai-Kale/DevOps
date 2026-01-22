@@ -25,6 +25,23 @@
 ## EKS Cluster Metrics for Monitoring:
 - [eks-cluster-metrics](https://www.datadoghq.com/blog/eks-cluster-metrics/)
 
+## K8S Resources
+
+1. Linux Journey – brush up on fundamentals you’ll actually need in interviews.
+2. iximiuz playground – run K8s, Docker, Linux networking labs in-browser.
+3. AWS Well-Architected Labs – practice designing like an AWS Solutions Architect.
+4. Kubernetes the Hard Way – if you can do this, interviews feel easier.
+5. DevOps Exercises GitHub – 500+ questions, commands, and scenarios.
+6. Prometheus & Grafana Playground – monitoring without burning infra costs.
+7. GCP Architecture Framework – learn how Google designs for scale.
+8. Terraform Registry Modules – ready-to-use infra blueprints.
+9. Kube Academy (VMware) – free, high-quality K8s courses.
+10. Awesome Incident Response – real-world incident playbooks.
+11. Chaos Mesh Playground – break things safely and learn to recover.
+12. ShellCheck – fix bash scripts before they blow up in prod.
+13. Istio by Example – understand service mesh with real examples.
+14. Nginx Config Generator – production-ready configs made simple.
+15. The Site Reliability Workbook (Google SRE) – the bible of scaling & reliability.
 ## References for JVM memory parameter tuning:
 
 - [https://lnkd.in/ez7Szpsm](https://lnkd.in/ez7Szpsm)
